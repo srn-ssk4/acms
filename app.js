@@ -148,7 +148,14 @@ function setupMobileMenu() {
     });
   }
 }
+const menuBtn = document.querySelector('openMenuBtn'); // ใส่ Class ของปุ่มเมนูระบบของคุณ
+const sidebar = document.querySelector('sidebar');
 
+if (menuBtn && sidebar) {
+  menuBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('openMenuBtn');
+  });
+}
 // เรียกใช้งานฟังก์ชันเมื่อ DOM โหลดเสร็จ หรือหลังจากที่แอป Render เมนูเสร็จ
 document.addEventListener("DOMContentLoaded", setupMobileMenu);
 // หากแอปของคุณมีการเคลียร์หน้าจอแล้ววาดใหม่ ให้เรียก setupMobileMenu() อีกครั้งหลังจากวาดเมนูเสร็จ
