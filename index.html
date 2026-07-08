@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ระบบการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ (Multi-User)</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- โหลด Firebase SDK Modules -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div id="loginOverlay" style="position: fixed; top:0; left:0; width:100%; height:100%; background: #f5f7fb; z-index: 99999; display: flex; justify-content: center; align-items: center; font-family: 'Segoe UI', Tahoma, sans-serif;">
+  <div style="background: #ffffff; width: 100%; max-width: 400px; padding: 40px 30px; border-radius: 8px; box-shadow: 0 16px 38px rgba(18, 32, 46, .08); border-top: 4px solid #126a6f; box-sizing: border-box;">
+    <div style="text-align: center; margin-bottom: 25px;">
+      <div style="width:54px; height:54px; border:2px solid #126a6f; display:grid; place-items: center; color:#126a6f; font-weight:800; font-size:26px; margin: 0 auto 10px; border-radius: 50%;">🏆</div>
+      <h3 style="margin:0; color:#126a6f;">เข้าสู่ระบบ (ระบบออนไลน์ส่วนกลาง)</h3>
+      <p style="margin:5px 0 0; font-size:13px; color:#657786;">ข้อมูลจะอัปเดตเรียลไทม์ร่วมกันทุกโรงเรียน</p>
+    </div>
+    <div style="margin-bottom: 15px;">
+      <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;">ชื่อผู้ใช้งาน</label>
+      <input type="text" id="username" placeholder="ระบุชื่อผู้ใช้" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom: 20px;">
+      <label style="display:block; font-size:13px; font-weight:bold; margin-bottom:5px; color:#333;">รหัสผ่าน</label>
+      <input type="password" id="password" placeholder="••••••••" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;">
+    </div>
+    <button id="loginBtn" style="width:100%; padding:12px; background:#126a6f; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:15px;">เข้าสู่ระบบ</button>
+    <p id="loginError" style="color:red; text-align:center; font-size:13px; margin-top:10px; display:none;">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
+  </div>
+</div>
+
+<!-- Main Application UI Structure (ยึดตามโครงสร้างเดิมของหน้างาน) -->
+<div id="mainContainer" style="display:none;">
+  <!-- ส่วนเนื้อหาเดิมของหน้าเว็บของคุณจะถูกควบคุมการเข้าถึงผ่านระบบสิทธิ์การโหลดข้อมูล -->
+  <h2>ระบบการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h2>
+  <p>เชื่อมต่อระบบออนไลน์ส่วนกลางเรียบร้อยแล้ว ข้อมูลจะ Sync กันระหว่างผู้ใช้โดยอัตโนมัติ</p>
+  
+  <!-- เมนูและปุ่มควบคุมหลัก -->
+  <div style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+     <button id="logoutBtn" style="background: #e02424; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🚪 ออกจากระบบ</button>
+     <span id="userDisplay" style="margin-left:15px; font-weight:bold; color:#126a6f;"></span>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
