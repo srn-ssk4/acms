@@ -514,7 +514,22 @@ function bindForms() {
 	if (action === "editUser") editUser(id);
 	if (action === "deleteUser") removeItem("users", id);
   });
-  
+  // ดักจับการคลิกที่ตัว Document เลย ไม่ว่าปุ่มจะถูกสร้างใหม่กี่ครั้งก็ยังใช้งานได้
+document.addEventListener('click', (e) => {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  // ถ้าคลิกปุ่มเปิดเมนู
+  if (e.target.closest('#openMenuBtn')) {
+    sidebar.classList.add('active');
+    overlay.classList.add('active');
+  }
+  // ถ้าคลิกปุ่มปิด หรือคลิกพื้นที่ว่างภายนอก (Overlay) หรือคลิกเมนูข้างใน
+  else if (e.target.closest('#closeMenuBtn') || e.target === overlay || (sidebar && sidebar.contains(e.target) && (e.target.tagName === 'A' || e.target.closest('nav a')))) {
+    sidebar.classList.remove('active');
+    overlay.classList.remove('active');
+  }
+});
   if($("eventSearch")) $("eventSearch").addEventListener("input", renderEvents);
   if($("eventForm")) $("eventForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -1163,3 +1178,36 @@ if (logoutBtn) {
     }
   });
 }
+// ==========================================
+// ระบบควบคุม Sidebar สำหรับ Smartphone
+// ==========================================
+function setupMobileMenu() {
+  const openMenuBtn = document.getElementById('openMenuBtn');
+  const closeMenuBtn = document.getElementById('closeMenuBtn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  function toggleSidebar() {
+    if (sidebar) sidebar.classList.toggle('active');
+    if (overlay) overlay.classList.toggle('active');
+  }
+
+  // ใช้การตรวจสอบก่อนผูก Event เสมอเพื่อป้องกัน Error
+  if (openMenuBtn) openMenuBtn.addEventListener('click', toggleSidebar);
+  if (closeMenuBtn) closeMenuBtn.addEventListener('click', toggleSidebar);
+  if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+  // ปิดเมนูอัตโนมัติเมื่อมีการคลิกเปลี่ยนเมนูข้างใน
+  if (sidebar) {
+    sidebar.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('nav a')) {
+        sidebar.classList.remove('active');
+        if (overlay) overlay.classList.remove('active');
+      }
+    });
+  }
+}
+
+// เรียกใช้งานฟังก์ชันเมื่อ DOM โหลดเสร็จ หรือหลังจากที่แอป Render เมนูเสร็จ
+document.addEventListener("DOMContentLoaded", setupMobileMenu);
+// หากแอปของคุณมีการเคลียร์หน้าจอแล้ววาดใหม่ ให้เรียก setupMobileMenu() อีกครั้งหลังจากวาดเมนูเสร็จ

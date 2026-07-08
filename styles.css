@@ -359,3 +359,31 @@ textarea { min-height: 86px; resize: vertical; }
   .cert { padding: 28px; min-height: 360px; }
   .sign-row { flex-direction: column; align-items: center; }
 }
+@media (max-width: 1050px) {
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px; /* ซ่อนไว้ทางซ้าย */
+    width: 280px;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  /* เมื่อมีคลาส active ให้เลื่อนออกมาแสดง */
+  #sidebar.active {
+    left: 0; 
+  }
+
+  /* ตัวเคลือบบังหน้าจอ (Overlay) */
+  #sidebarOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+  }
+  #sidebarOverlay.active {
+    display: block;
+  }
+}
