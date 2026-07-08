@@ -111,21 +111,41 @@ async function loadDataFromServer() {
     const response = await fetch(`${BACKEND_API_URL}?action=getData`);
     const serverData = await response.json();
     
-    if (serverData && serverData.schools) {
+    // ตรวจสอบว่าได้ข้อมูลจาก Server หรือไม่
+    if (serverData && (serverData.schools || serverData.users)) {
       db = serverData;
+      
+      // 🔒 [จุดสำคัญ] ป้องกันการ Login ไม่ได้: หากข้อมูลจาก Server ไม่มีรายชื่อผู้ใช้งาน ให้สร้างค่าเริ่มต้นใส่เข้าไปทันที
+      if (!db.users || !Array.isArray(db.users) || db.users.length === 0) {
+        console.log("พบข้อมูลผู้ใช้บน Cloud ว่างเปล่า ระบบจะเติมผู้ใช้เริ่มต้นให้");
+        db.users = makeUsers();
+        // สั่งอัปเดตกลับขึ้นเซิร์ฟเวอร์ด้วยเพื่อให้คลาวด์มีข้อมูลผู้ใช้งานชุดนี้
+        saveDataToServer(); 
+      }
+      
       localStorage.setItem(storeKey, JSON.stringify(db));
       console.log("ซิงค์ข้อมูลจากเซิร์ฟเวอร์สำเร็จ!");
       render();
     } else {
       console.log("ไม่พบข้อมูลเก่าบน Cloud, ดึงข้อมูลจากฐานเครื่องสำรอง");
       const local = localStorage.getItem(storeKey);
-      if (local && local !== "null") db = JSON.parse(local);
+      if (local && local !== "null") {
+        db = JSON.parse(local);
+        if (!db.users || db.users.length === 0) db.users = makeUsers();
+      } else {
+        db = seed(); // หากไม่มีข้อมูลที่ไหนเลย ให้ใช้ค่าเริ่มต้นทั้งหมด
+      }
       render();
     }
   } catch (error) {
     console.error("การโหลดข้อมูลจากคลาวด์ผิดพลาด:", error);
     const local = localStorage.getItem(storeKey);
-    if (local && local !== "null") db = JSON.parse(local);
+    if (local && local !== "null") {
+      db = JSON.parse(local);
+      if (!db.users || db.users.length === 0) db.users = makeUsers();
+    } else {
+      db = seed();
+    }
     render();
   }
 }
