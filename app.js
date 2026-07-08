@@ -1005,77 +1005,59 @@ function importDatabaseFromJson(event) {
   reader.readAsText(file);
 }
 init();
-// ==========================================
-// 2. CORE APPLICATION LOGIC (MULTI-USER VER.)
-// ==========================================
-
+// ===================================================
+// ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
+// ===================================================
 document.addEventListener("DOMContentLoaded", () => {
   const loginOverlay = document.getElementById("loginOverlay");
-  const mainContainer = document.getElementById("mainContainer");
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const usernameInput = document.getElementById("username");
-  const passwordInput = document.getElementById("password");
+  const loginForm = document.getElementById("mainLoginForm");
   const loginError = document.getElementById("loginError");
-  const userDisplay = document.getElementById("userDisplay");
 
-  // ตรวจสอบเซสชันผู้ใช้งานเดิม
-  const savedUser = sessionStorage.getItem("currentUser");
-  if (savedUser) {
-    initApp(JSON.parse(savedUser));
-  }
-
-  // ระบบตรวจสอบการเข้าสู่ระบบ
-  if (loginBtn) {
-    loginBtn.addEventListener("click", () => {
-      const user = usernameInput.value.trim();
-      const pass = passwordInput.value.trim();
-
-      if (user && pass) { // ในระบบจริงสามารถต่อยอดไปดึงข้อมูลผู้ใช้จาก db.ref('users') ได้
-        const userData = { username: user, role: "admin", loginTime: new Date().toISOString() };
-        sessionStorage.setItem("currentUser", JSON.stringify(userData));
-        initApp(userData);
-      } else {
-        if(loginError) loginError.style.display = "block";
-      }
-    });
-  }
-
-  // ฟังก์ชันเริ่มแอปพลิเคชันหลักหลังจากยืนยันตัวตนสำเร็จ
-  function initApp(user) {
-    if(loginOverlay) loginOverlay.style.display = "none";
-    if(mainContainer) mainContainer.style.display = "block";
-    if(userDisplay) userDisplay.textContent = `ผู้ใช้งานปัจจุบัน: ${user.username}`;
-
-    // เชื่อมต่อฐานข้อมูลกลางแบบเรียลไทม์ (เมื่อคนอื่นเปลี่ยน ข้อมูลในหน้าจอเราจะเปลี่ยนตามทันที)
-    if (typeof DatabaseManager !== "undefined") {
-      DatabaseManager.syncData((cloudData) => {
-        console.log("🔄 ดึงข้อมูลเวอร์ชันล่าสุดจาก Firebase เรียบร้อย:", cloudData);
-        // บันทึกข้อมูลลง Memory ของแอปพลิเคชัน เพื่อทำการกระจายข้อมูลไปยังตารางต่างๆ ของคุณ
-        window.currentGlobalData = cloudData;
-        
-        // เรียกฟังก์ชันเรนเดอร์ตาราง หน้าหลัก แดชบอร์ดของคุณที่นี่
-        // ตัวอย่าง: if(typeof renderDashboard === 'function') renderDashboard(cloudData);
-      });
-    }
-  }
-
-  // ระบบจัดการการออกจากระบบ (Logout & Clear Session)
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-        sessionStorage.removeItem("currentUser");
-        if(loginOverlay) {
-          if(usernameInput) usernameInput.value = "";
-          if(passwordInput) passwordInput.value = "";
-          loginOverlay.style.display = "flex";
+  // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
+  function getAllUsers() {
+    // 1. ลองดึงจาก localStorage ของระบบก่อน
+    const stored = localStorage.getItem(storeKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.users && parsed.users.length > 0) {
+          return parsed.users;
         }
-        if(mainContainer) mainContainer.style.display = "none";
-      }
-    });
+      } catch (e) { console.error(e); }
+    }
+    // 2. ถ้าไม่มีใน localStorage ให้เรียกจากฟังก์ชันสร้างผู้ใช้เริ่มต้นใน data.js
+    if (typeof makeUsers === "function") {
+      return makeUsers();
+    }
+    return [];
   }
-});
 
+  // จัดการการกดยืนยันฟอร์ม Login
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const usernameInput = document.getElementById("loginUser").value.trim();
+      const passwordInput = document.getElementById("loginPassword").value;
+      const appUsers = getAllUsers();
+
+      // ค้นหาบัญชีที่ข้อมูลตรงกัน
+      const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
+      
+// ค้นหาโค้ดส่วนยืนยันล็อกอินในฟังก์ชัน เช่น $("loginForm").addEventListener("submit", ...)
+if (foundUser) {
+  // บันทึกเซสชันปกติ
+  sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
+  if (loginOverlay) loginOverlay.style.display = "none";
+
+  // ⚡ บรรทัดสำคัญ: ปรับสิทธิ์ในแอปตามที่ Account นี้ได้รับจริง ๆ
+  const roleSelect = document.getElementById("roleSelect");
+ // ค้นหาจุดที่มีการเช็คเปลี่ยนสิทธิ์บทบาทผู้ใช้งาน (Role Change)
+if (roleSelect) {
+  roleSelect.addEventListener("change", () => {
+    const r = roleSelect.value;
+    renderNav();
+    
     // ปลดล็อกให้ปุ่มรายงาน (reportBtn) ใช้งานได้ทั้งแอดมินและยูสเซอร์ทั่วไป
     const reportBtn = document.getElementById("reportBtn");
     if (reportBtn) {

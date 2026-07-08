@@ -1,25 +1,4 @@
 // ==========================================
-// 1. CONFIGURATION FOR MULTI-USER (FIREBASE)
-// ==========================================
-// แทนที่ค่าด้านล่างนี้ด้วย Config ที่ได้มาจากโปรเจกต์ Firebase ของคุณ
-const firebaseConfig = {
-  apiKey: "https://acms-dc534-default-rtdb.firebaseio.com/",
-  authDomain: "https://acms-dc534-default-rtdb.firebaseio.com/",
-  databaseURL: "https://acms-dc534-default-rtdb.firebaseio.com/,
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-// เริ่มต้นทำงาน Firebase
-if (firebaseConfig.apiKey !== "https://acms-dc534-default-rtdb.firebaseio.com/") {
-  firebase.initializeApp(firebaseConfig);
-} else {
-  console.warn("⚠️ กรุณาตั้งค่าพารามิเตอร์ firebaseConfig ในไฟล์ data.js เพื่อเชื่อมต่อฐานข้อมูลออนไลน์ส่วนกลาง");
-}
-
-// ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
