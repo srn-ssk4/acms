@@ -1,8 +1,32 @@
 // ==========================================
 // 1. CONSTANTS, INITIAL DATA SEEDS & API CONFIG
 // ==========================================
-const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec"; // 👈 วาง URL เว็บแอปของคุณที่นี่
+const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; // 👈 วาง URL เว็บแอปของคุณที่นี่
+const scriptURL = 'https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec';
+const form = document.getElementById('your-form-id');
 
+form.addEventListener('submit', e => {
+  e.preventDefault(); // สำคัญมาก: กันไม่ให้หน้าเว็บรีเฟรช
+  
+  // ดึงข้อมูลจากฟอร์ม
+  const formData = new FormData(form);
+  
+  // ส่งข้อมูลไปยัง Google Apps Script
+  fetch(scriptURL, { 
+    method: 'POST', 
+    body: formData // หรือส่งเป็น JSON ขึ้นอยู่กับโค้ดฝั่ง Apps Script
+  })
+  .then(response => response.json())
+  .then(data => {
+    if(data.result === 'success') {
+      alert('บันทึกข้อมูลลง Google Sheet สำเร็จ!');
+      form.reset(); // ล้างข้อมูลในฟอร์ม
+    } else {
+      console.error('Error:', data.error);
+    }
+  })
+  .catch(error => console.error('Error!', error.message));
+});
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
 const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
 const navItems = [
@@ -151,7 +175,7 @@ async function loadDataFromServer() {
 }
 
 async function saveDataToServer() {
-  if (!BACKEND_API_URL || BACKEND_API_URL.startsWith("https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec)) return;
+  if (!BACKEND_API_URL || BACKEND_API_URL.startsWith("https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec)) return;
   try {
     const response = await fetch(BACKEND_API_URL, {
       method: "POST",
@@ -1010,7 +1034,7 @@ function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
    // const dataStr = localStorage.getItem(storeKey);
-	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
+	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1184,7 +1208,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function getAllUsers() {
     // 1. ลองดึงจาก localStorage ของระบบก่อน
     const stored = localStorage.getItem(storeKey);
-	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
+	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -1212,12 +1236,41 @@ document.addEventListener("DOMContentLoaded", () => {
       // ค้นหาบัญชีที่ข้อมูลตรงกัน
       const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
       
-// ค้นหาโค้ดส่วนยืนยันล็อกอินในฟังก์ชัน เช่น $("loginForm").addEventListener("submit", ...)
+// ค้นหาและแก้ไขเฉพาะบล็อก if (foundUser) ให้เป็นแบบนี้:
 if (foundUser) {
-  // บันทึกเซสชันปกติ
+  // 1. บันทึกเซสชันปกติ
   sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
   if (loginOverlay) loginOverlay.style.display = "none";
 
+  // 2. อัปเดตตัวแปรสิทธิ์หลักของระบบ (จุดที่ขาดไป)
+  currentRole = foundUser.role; 
+
+  // 3. ปรับค่าใน select บทบาทให้ตรงกับสิทธิ์ที่ล็อกอินเข้ามา
+  const roleSelect = document.getElementById("roleSelect");
+  if (roleSelect) {
+    roleSelect.value = foundUser.role;
+  }
+
+  const roleBadge = document.getElementById("roleBadge");
+  if (roleBadge) {
+    roleBadge.textContent = `${foundUser.username} (${foundUser.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
+  }
+
+  // 4. สั่งสั่งรันฟังก์ชันรีเฟรชหน้าจอและเมนูใหม่ทั้งหมดทันที (จุดที่ขาดไป)
+  if (typeof render === "function") {
+    render(); 
+  }
+  if (typeof renderNav === "function") {
+    renderNav();
+  }
+
+  alert(`ยินดีต้อนรับเข้าสู่ระบบ: คุณ ${foundUser.username}`);
+
+} else {
+  // รหัสผิดพลาดให้แจ้งเตือน
+  if (loginError) loginError.style.display = "block";
+  document.getElementById("loginPassword").value = "";
+}
   // ⚡ บรรทัดสำคัญ: ปรับสิทธิ์ในแอปตามที่ Account นี้ได้รับจริง ๆ
   const roleSelect = document.getElementById("roleSelect");
  // ค้นหาจุดที่มีการเช็คเปลี่ยนสิทธิ์บทบาทผู้ใช้งาน (Role Change)
