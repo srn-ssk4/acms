@@ -1,6 +1,8 @@
 // ==========================================
-// 1. CONSTANTS & INITIAL DATA SEEDS
+// 1. CONSTANTS, INITIAL DATA SEEDS & API CONFIG
 // ==========================================
+const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec"; // 👈 วาง URL เว็บแอปของคุณที่นี่
+
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
 const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
 const navItems = [
@@ -43,12 +45,13 @@ const defaultRegistrations = [
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let loadDataFromServer() || "null") || seed();
+let db = seed(); // กำหนดค่าเริ่มต้นเป็น Seed เสมอ เพื่อเป็นโครงสร้างหลักไว้ก่อน
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
 let certSignUrl = "";
-let certBgUrl = ""; // เพิ่มตัวแปรเก็บไฟล์ภาพพื้นหลังต้นฉบับ
+let certBgUrl = "";
+
 // ==========================================
 // 3. UTILITY FUNCTIONS
 // ==========================================
@@ -86,6 +89,66 @@ function seed() {
   };
 }
 
+const $ = id => document.getElementById(id);
+const byId = (list, id) => list.find(x => x.id === id) || {};
+
+// สั่งให้เซฟลง LocalStorage พร้อมยิง API ขึ้น Cloud ทันทีอย่างถูกต้อง
+const save = () => {
+  localStorage.setItem(storeKey, JSON.stringify(db));
+  saveDataToServer(); 
+};
+
+const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
+const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
+const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
+
+// ==========================================
+// 新 4. ฟังก์ชันสำหรับการรับ-ส่งข้อมูลผ่าน API
+// ==========================================
+async function loadDataFromServer() {
+  try {
+    console.log("กำลังดึงข้อมูลล่าสุดจาก Google Sheets...");
+    const response = await fetch(`${BACKEND_API_URL}?action=getData`);
+    const serverData = await response.json();
+    
+    if (serverData && serverData.schools) {
+      db = serverData;
+      localStorage.setItem(storeKey, JSON.stringify(db));
+      console.log("ซิงค์ข้อมูลจากเซิร์ฟเวอร์สำเร็จ!");
+      render();
+    } else {
+      console.log("ไม่พบข้อมูลเก่าบน Cloud, ดึงข้อมูลจากฐานเครื่องสำรอง");
+      const local = localStorage.getItem(storeKey);
+      if (local && local !== "null") db = JSON.parse(local);
+      render();
+    }
+  } catch (error) {
+    console.error("การโหลดข้อมูลจากคลาวด์ผิดพลาด:", error);
+    const local = localStorage.getItem(storeKey);
+    if (local && local !== "null") db = JSON.parse(local);
+    render();
+  }
+}
+
+async function saveDataToServer() {
+  if (!BACKEND_API_URL || BACKEND_API_URL.startsWith("https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec)) return;
+  try {
+    const response = await fetch(BACKEND_API_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "updateDatabase", data: db })
+    });
+    const resResult = await response.json();
+    if (resResult.status === "success") {
+      console.log("✅ บันทึกข้อมูลคลาวด์เรียบร้อย");
+    } else {
+      console.error("Server Error:", resResult.message);
+    }
+  } catch (error) {
+    console.error("เครือข่ายขัดข้อง ไม่สามารถซิงค์ขึ้นชีตได้:", error);
+  }
+}
 const $ = id => document.getElementById(id);
 const byId = (list, id) => list.find(x => x.id === id) || {};
 const save = () => localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
