@@ -43,7 +43,7 @@ const defaultRegistrations = [
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
+let loadDataFromServer() || "null") || seed();
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
@@ -88,8 +88,7 @@ function seed() {
 
 const $ = id => document.getElementById(id);
 const byId = (list, id) => list.find(x => x.id === id) || {};
-const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
-const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
+const save = () => localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
 const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
 const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
 const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
@@ -927,7 +926,7 @@ function openReport() {
 function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-    const dataStr = localStorage.getItem(storeKey);
+   // const dataStr = localStorage.getItem(storeKey);
 	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
@@ -1020,6 +1019,74 @@ function importDatabaseFromJson(event) {
   };
 
   reader.readAsText(file);
+}
+// ฟังก์ชันโหลดข้อมูลจาก Google Sheets แทน LocalStorage
+async function loadDataFromServer() {
+  try {
+    // แสดง Loading ในระหว่างรอโหลด (Optional: สามารถสร้าง UI มารองรับได้)
+    console.log("กำลังโหลดข้อมูลล่าสุดจากเซิร์ฟเวอร์...");
+    
+    const response = await fetch(`${BACKEND_API_URL}?action=getData`);
+    const serverData = await response.json();
+    
+    // ตรวจสอบว่ามีข้อมูลส่งกลับมาไหม ถ้ามีโครงสร้างหลักให้เอาไปใช้
+    if (serverData && serverData.schools) {
+      // เอาข้อมูลจาก Server ไปเขียนทับตัวแปร state หลักในแอปของคุณ (เช่น db หรือ database)
+      // สมมติว่าแอปของคุณใช้ตัวแปรชื่อ db ในการเก็บข้อมูลปัจจุบัน:
+      db = serverData;
+      
+      // เซฟลงสำรองใน localStorage เผื่อกรณีฉุกเฉินหลุดการเชื่อมต่อ
+      localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
+      
+      // เรียกฟังก์ชัน Render UI เดิมของแอปคุณเพื่อให้หน้าจอแสดงข้อมูลล่าสุด
+      if (typeof renderApp === "function") renderApp(); 
+      else if (typeof initDashboard === "function") initDashboard();
+      
+      console.log("Sync ข้อมูลเสร็จสิ้น!");
+    } else {
+      console.log("ไม่พบข้อมูลบนเซิร์ฟเวอร์ จะใช้ข้อมูลตั้งต้นในเครื่อง");
+      initDefaultData(); // ฟังก์ชันโหลดข้อมูล Seed เดิมของคุณ
+    }
+  } catch (error) {
+    console.error("โหลดข้อมูลจาก Server ผิดพลาด:", error);
+    // หากเน็ตหลุด ให้ดึงจาก localStorage ประทังไปก่อน
+    const localData = localStorage.getItem(storeKey);
+    if (localData) {
+      db = JSON.parse(localData);
+      if (typeof renderApp === "function") renderApp();
+    }
+  }
+}
+
+// ฟังก์ชันบันทึกข้อมูลก้อนปัจจุบันกลับไปยังเซิร์ฟเวอร์
+async function saveDataToServer() {
+  try {
+    // เซฟลงเครื่องตัวเองก่อนเพื่อความเร็วชั่วคราว
+    localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
+    
+    // ยิงขึ้น Google Sheets ด้วยระบบคิวของ Apps Script
+    const response = await fetch(BACKEND_API_URL, {
+      method: "POST",
+      mode: "cors", // เปิด cors หรือใช้ no-cors ขึ้นอยู่กับการตั้งค่าเครือข่าย
+      headers: {
+        "Content-Type": "text/plain", // ใช้ text/plain เพื่อเลี่ยงปัญหา Preflight CORS บราว์เซอร์บางตัว
+      },
+      body: JSON.stringify({
+        action: "updateDatabase",
+        data: db
+      })
+    });
+    
+    const resResult = await response.json();
+    if (resResult.status === "success") {
+      console.log("บันทึกข้อมูลลงคลาวด์เรียบร้อย");
+    } else {
+      throw new Error(resResult.message);
+    }
+  } catch (error) {
+    console.error("ไม่สามารถซิงค์ข้อมูลขึ้นเซิร์ฟเวอร์ได้:", error);
+    alert("⚠️ คำเตือน: ระบบบันทึกข้อมูลในเครื่องคุณแล้ว แต่ไม่สามารถอัปเดตขึ้นคลาวด์ร่วมกับคนอื่นได้เนื่องจากเครือข่ายขัดข้อง");
+  }
 }
 init();
 // ===================================================
