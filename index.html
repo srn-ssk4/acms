@@ -31,20 +31,404 @@
   </div>
 </div>
 
-<!-- Main Application UI Structure (ยึดตามโครงสร้างเดิมของหน้างาน) -->
-<div id="mainContainer" style="display:none;">
-  <!-- ส่วนเนื้อหาเดิมของหน้าเว็บของคุณจะถูกควบคุมการเข้าถึงผ่านระบบสิทธิ์การโหลดข้อมูล -->
-  <h2>ระบบการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h2>
-  <p>เชื่อมต่อระบบออนไลน์ส่วนกลางเรียบร้อยแล้ว ข้อมูลจะ Sync กันระหว่างผู้ใช้โดยอัตโนมัติ</p>
-  
-  <!-- เมนูและปุ่มควบคุมหลัก -->
-  <div style="margin: 20px 0; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-     <button id="logoutBtn" style="background: #e02424; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🚪 ออกจากระบบ</button>
-     <span id="userDisplay" style="margin-left:15px; font-weight:bold; color:#126a6f;"></span>
-  </div>
-</div>
+<body data-theme="default">
+  <!-- ส่วนบดบังพื้นหลังเมื่อเปิด Sidebar บนมือถือ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-<script src="data.js"></script>
-<script src="app.js"></script>
+  <div class="app">
+    <aside id="sidebar">
+      <!-- ปุ่มปิดเมนูสำหรับแสดงเฉพาะบนมือถือ -->
+      <button class="mobile-menu-btn" id="closeMenuBtn" style="background:#b83d45; margin: 10px;" type="button">✕ ปิดเมนู</button>
+      <div>
+        <div class="seal"><strong class="actions">SRN</strong>&nbsp;</div>
+        <div>
+          <p>ระบบแข่งขันศิลปหัตถกรรมนักเรียน</p>
+          <p>กลุ่มโรงเรียนศรีรัตนะ สพป.ศรีสะเกษ เขต 4</p>
+        </div>
+      </div>
+      <nav id="nav"></nav>
+<div class="role-box" style="display: none;">
+  <strong>login</strong>
+  <label>เลือกบทบาทเข้าใช้งาน
+    <select id="roleSelect">
+      <option value="admin">Admin: บริหารจัดการทั้งหมด</option>
+      <option value="user">User: ลงทะเบียนและบันทึกตามสิทธิ์</option>
+    </select> 
+  </label> 
+  <span class="badge ok" id="roleBadge">Admin พร้อมใช้งาน</span>
+</div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <!-- ปุ่มแฮมเบอร์เกอร์สำหรับเปิดเมนูบนมือถือ -->
+        <button class="mobile-menu-btn" id="openMenuBtn" type="button">☰ เมนูระบบ</button>
+        <div>
+          <h2 id="pageTitle">แดชบอร์ด</h2>
+          <p>การแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</p>
+          <p>สำนักงานเขตพื้นที่การศึกษาประถมศึกษาศรีสะเกษ เขต 4</p>
+        </div>
+        <div class="toolbar admin-only">
+          <select id="themeSelect" title="เปลี่ยนธีม">
+            <option value="default">ธีมทางการ</option>
+            <option value="royal">ธีมพิธีการ</option>
+            <option value="fresh">ธีมสดใส</option>
+            <option value="custom">ธีมกำหนดเอง</option>
+          </select>
+          <button class="secondary" id="themePanelBtn" type="button">ปรับธีม</button>
+          <button class="secondary" id="seedBtn" type="button">คืนค่าข้อมูลตัวอย่าง</button>
+        </div>
+      </header>
+
+      <!-- ส่วนของ Section ทั้งหมดคงเดิม (ระบบจะประมวลผลผ่าน Grid แบบ Responsive อัตโนมัติด้วย CSS ด้านบน) -->
+      <div class="theme-panel" id="themePanel" aria-hidden="true">
+        <div class="theme-editor">
+          <header>
+            <div>
+              <h3>ปรับแต่งธีมอิสระ</h3>
+              <p>สำหรับ Admin กำหนดสีและบรรยากาศของเว็บไซต์ได้เอง ระบบจะบันทึกไว้ในเบราว์เซอร์นี้</p>
+            </div>
+            <button class="icon secondary" id="closeThemePanel" type="button" title="ปิด">×</button>
+          </header>
+          <div class="color-grid">
+            <label class="color-field">สีพื้นหลัง<input id="themeBg" type="color"></label>
+            <label class="color-field">สีการ์ด/พื้นผิว<input id="themePanelColor" type="color"></label>
+            <label class="color-field">สีตัวอักษร<input id="themeText" type="color"></label>
+            <label class="color-field">สีเส้นขอบ<input id="themeLine" type="color"></label>
+            <label class="color-field">สีหลัก<input id="themePrimary" type="color"></label>
+            <label class="color-field">สีรอง<input id="themePrimary2" type="color"></label>
+            <label class="color-field">สีเน้น<input id="themeAccent" type="color"></label>
+            <label class="color-field">สีเมนูด้านซ้าย<input id="themeSidebar" type="color"></label>
+            <label class="color-field">สีหัวเว็บเริ่มต้น<input id="themeHeroFrom" type="color"></label>
+            <label class="color-field">สีหัวเว็บปลายทาง<input id="themeHeroTo" type="color"></label>
+            <label>มุมโค้งของ UI
+              <input id="themeRadius" type="range" min="0" max="22" step="1">
+            </label>
+            <label>รูปแบบตัวอักษร
+              <select id="themeFont">
+                <option value='"Segoe UI", Tahoma, sans-serif'>Segoe UI / Tahoma</option>
+                <option value='Tahoma, "Segoe UI", sans-serif'>Tahoma</option>
+                <option value='Arial, "Segoe UI", sans-serif'>Arial</option>
+                <option value='Georgia, "Times New Roman", serif'>Georgia</option>
+              </select>
+            </label>
+          </div>
+          <div class="theme-preview" id="themePreview">
+            <div class="preview-side">
+              <strong>ศรีรัตนะ</strong>
+              <span class="badge">แดชบอร์ด</span>
+              <span class="badge">รายการแข่งขัน</span>
+            </div>
+            <div class="preview-main">
+              <div class="preview-hero">ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน</div>
+              <div class="preview-row">
+                <span class="badge ok">รับรอง</span>
+                <span class="badge warn">รอตรวจ</span>
+                <button type="button">ปุ่มหลัก</button>
+                <button class="secondary" type="button">ปุ่มรอง</button>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="saveThemeSettings" type="button">บันทึกธีม</button>
+            <button class="secondary" id="resetThemeSettings" type="button">คืนค่าเฉพาะธีม</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="section active" id="dashboard">
+        <div class="hero">
+          <div class="hero-panel">
+            <div>
+              <h3>ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h3>
+            </div>
+          </div>
+          <div class="visual-card">
+            <div class="mini-map"></div>
+            <div>
+              <strong>สนามแข่งขัน</strong>
+              <p style="margin:6px 0 0;color:var(--muted)">สนามแข่งขันดูได้จากเมนูจัดการสนาม</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid cols-4" id="stats"></div>
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="section-title"><h3>อันดับเหรียญรางวัลตามโรงเรียน</h3><span class="badge">10 อันดับแรก</span></div>
+            <div class="table-wrap"><table id="topMedals"></table></div>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>รายการแข่งขันล่าสุด</h3><span class="badge warn">กำลังจะแข่งขัน</span></div>
+            <div class="table-wrap"><table id="todayEvents"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="rankings">
+        <div class="section-title">
+          <div><h3>ตารางอันดับโรงเรียน</h3><p>เรียงตามจำนวนเหรียญทอง → เงิน → ทองแดง</p></div>
+        </div>
+        <div class="table-wrap"><table id="rankingTable"></table></div>
+      </section>
+
+      <section class="section" id="events">
+        <div class="section-title">
+          <div><h3>รายการแข่งขัน</h3><p>กำหนดกลุ่มสาระ ระดับชั้น ประเภทการแข่งขัน จำนวนผู้เข้าแข่งขัน และครูรับผิดชอบ</p></div>
+          <div class="searchbar"><input id="eventSearch" placeholder="ค้นหารายการหรือกลุ่มสาระ"></div>
+        </div>
+        <div class="split">
+          <div class="card admin-only">
+            <h3>เพิ่ม/แก้ไข รายการแข่งขัน</h3>
+            <form id="eventForm">
+              <input type="hidden" id="eventId">
+              <label>ชื่อรายการ<input id="eventName" required></label>
+              <label>กลุ่มสาระ<select id="eventSubject"></select></label>
+              <div class="form-grid two">
+                <label>ระดับชั้น<select id="eventLevel"></select></label>
+                <label>ประเภท<select id="eventType"><option>เดี่ยว</option><option>ทีม</option></select></label>
+              </div>
+              <div class="form-grid two">
+                <label>จำนวนผู้เข้าแข่งขัน<input id="eventMembers" type="number" min="1" value="1"></label>
+                <label>วันที่แข่งขัน<input id="eventDate" type="date"></label>
+              </div>
+              <label>สนามแข่งขัน<select id="eventVenue"></select></label>
+              <div class="actions">
+                <button type="submit">บันทึกรายการ</button>
+                <button class="secondary" type="button" id="clearEvent">ล้างฟอร์ม</button>
+              </div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="table-wrap"><table id="eventsTable"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="registration">
+        <div class="section-title">
+          <div><h3>ลงทะเบียนนักเรียน</h3><p>แนบรูปถ่ายและหนังสือรับรองจากโรงเรียนประกอบการสมัคร</p></div>
+        </div>
+        <div class="split">
+          <div class="card">
+            <form id="registrationForm">
+              <label>รายการแข่งขัน<select id="regEvent"></select></label>
+              <label>โรงเรียน<select id="regSchool"></select></label>
+              <label>ชื่อนักเรียน/ทีม<textarea id="regStudents" required placeholder="เช่น ด.ญ.กมลชนก ใจดี หรือรายชื่อสมาชิกทีม"></textarea></label>
+              <div class="form-grid two">
+                <label>ครูผู้รับผิดชอบ<input id="regTeacher" required></label>
+                <label>เบอร์โทรครู<input id="regPhone" required></label>
+              </div>
+              <div class="form-grid two">
+                <label>รูปถ่าย<input id="regPhoto" type="file" accept="image/*"></label>
+                <label>หนังสือรับรอง<input id="regCert" type="file" accept=".pdf,.jpg,.jpeg,.png"></label>
+              </div>
+              <button type="submit">ส่งลงทะเบียน</button>
+            </form>
+          </div>
+          <div class="card">
+            <div class="section-title"><h3>รายการลงทะเบียนล่าสุด</h3></div>
+            <div class="table-wrap"><table id="registrationTable"></table></div>
+          </div>
+        </div>
+      </section>
+
+<section class="section" id="results">
+  <div class="section-title">
+    <div>
+      <h3>บันทึกคะแนนและผลการแข่งขัน</h3>
+      <p>กำหนดสิทธิ์ให้แต่ละรายการสามารถบันทึกคะแนนและคำนวณเหรียญได้</p>
+    </div>
+  </div>
+  
+  <div class="split">
+    <div class="card admin-only">
+      <h3>บันทึกคะแนนผลการแข่งขัน</h3>
+      <form id="resultForm">
+        <input type="hidden" id="resultRegId">
+        
+        <label>รายการลงทะเบียน (โรงเรียน - รายการ)
+          <select id="resultRegistration" required></select>
+        </label>
+        
+        <div class="form-grid two">
+          <label>คะแนน (0-100)<input id="resultScore" type="number" min="0" max="100" value="80" required></label>
+          <label>อันดับที่<input id="resultRank" type="number" min="1" placeholder="เช่น 1, 2, 3"></label>
+        </div>
+        
+        <div class="form-grid two">
+          <label>ผลรางวัล / เหรียญ
+            <select id="resultMedal">
+              <option value="">-- คำนวณอัตโนมัติตามคะแนน --</option>
+              <option value="เหรียญทอง">เหรียญทอง (80-100)</option>
+              <option value="เหรียญเงิน">เหรียญเงิน (70-79)</option>
+              <option value="เหรียญทองแดง">เหรียญทองแดง (60-69)</option>
+              <option value="เข้าร่วมการแข่งขัน">เข้าร่วมการแข่งขัน (ต่ำกว่า 60)</option>
+            </select>
+          </label>
+          <label>ผู้บันทึกผล<input id="resultRecorder" value="กรรมการประจำรายการ"></label>
+        </div>
+        
+        <div class="actions">
+          <button type="submit">บันทึกผลคะแนน</button>
+          <button class="secondary" type="button" onclick="$('resultForm').reset(); $('resultRegId').value='';">ล้างฟอร์ม</button>
+        </div>
+      </form>
+    </div>
+    
+    <div class="card">
+      <div class="table-wrap">
+        <table id="resultsTable"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+      <section class="section" id="schools">
+        <div class="section-title"><div><h3>จัดการโรงเรียน</h3><p>เพิ่มชื่อโรงเรียน ผู้บริหารสถานศึกษา และเบอร์โทรติดต่อ</p></div></div>
+        <div class="split">
+          <div class="card admin-only">
+            <form id="schoolForm">
+              <input type="hidden" id="schoolId">
+              <label>ชื่อโรงเรียน<input id="schoolName" required></label>
+              <label>ชื่อผู้บริหารสถานศึกษา<input id="schoolDirector" required></label>
+              <label>เบอร์โทรติดต่อ<input id="schoolPhone" required></label>
+              <div class="actions"><button type="submit">บันทึกโรงเรียน</button><button class="secondary" type="button" id="clearSchool">ล้างฟอร์ม</button></div>
+            </form>
+          </div>
+          <div class="card"><div class="table-wrap"><table id="schoolsTable"></table></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="venues">
+        <div class="section-title"><div><h3>จัดการสนามแข่งขัน</h3><p>ทีม Admin เป็นผู้กำหนดสถานที่แข่งขันให้แต่ละรายการ</p></div></div>
+        <div class="split">
+          <div class="card admin-only">
+            <form id="venueForm">
+              <input type="hidden" id="venueId">
+              <label>ชื่อสนาม/อาคาร<input id="venueName" required></label>
+              <label>ที่ตั้ง/โรงเรียนเจ้าภาพ<input id="venueHost" required></label>
+              <label>ผู้ประสานงาน<input id="venueContact" required></label>
+              <button type="submit">บันทึกสนาม</button>
+            </form>
+          </div>
+          <div class="card"><div class="table-wrap"><table id="venuesTable"></table></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="judges">
+        <div class="section-title"><div><h3>กรรมการตัดสิน</h3><p>สมัครเป็นกรรมการในแต่ละรายการแข่งขัน พร้อมข้อมูลวิทยฐานะและเบอร์โทร</p></div></div>
+        <div class="split">
+          <div class="card">
+            <form id="judgeForm">
+			<input type="hidden" id="judgeId">
+              <label>รายการแข่งขัน<select id="judgeEvent"></select></label>
+              <label>ชื่อ-สกุล<input id="judgeName" required></label>
+              <div class="form-grid two">
+                <label>คุณสมบัติ<select id="judgeRole"><option>ครู/บุคลากร</option><option>กรรมการกลาง</option></select></label>
+                <label>วิทยฐานะ<select id="judgeRank"><option>ไม่มีวิทยฐานะ</option><option>ครู</option><option>ครูชำนาญการ</option><option>ครูชำนาญการพิเศษ</option><option>ครูเชี่ยวชาญ</option></select></label>
+              </div>
+              <label>เบอร์โทรติดต่อ<input id="judgePhone" required></label>
+              <button type="submit">สมัครกรรมการ</button>
+            </form>
+          </div>
+          <div class="card"><div class="table-wrap"><table id="judgesTable"></table></div></div>
+        </div>
+      </section>
+
+      <section class="section" id="documents">
+        <div class="section-title"><div><h3>ตรวจสอบเอกสารการสมัคร</h3><p>รับรองเอกสาร หรือส่งกลับให้ดำเนินการแก้ไข</p></div></div>
+        <div class="card"><div class="table-wrap"><table id="documentsTable"></table></div></div>
+      </section>
+
+      <section class="section" id="reports">
+        <div class="section-title"><div><h3>รายงานและเกียรติบัตร</h3><p>สร้างรายงาน PDF และเกียรติบัตรรางวัลพร้อมโลโก้ ลายเซ็น และเลขทะเบียน</p></div></div>
+        <div class="grid cols-2">
+          
+            <form id="certForm">
+              <label>ประเภทผู้รับ<select id="certType"><option>นักเรียน</option><option>ครู</option><option>กรรมการผู้ตัดสิน</option><option>กรรมการกลาง</option></select></label>
+              <label>ชื่อผู้รับ<input id="certName" value="ด.ญ.กมลชนก ใจดี"></label>
+              <label>รางวัล<select id="certAward"><option>เหรียญทอง</option><option>เหรียญเงิน</option><option>เหรียญทองแดง</option><option>เข้าร่วมการแข่งขัน</option></select></label>
+              <label>รายการแข่งขัน<select id="certEvent"></select></label>
+              <div class="form-grid two">
+                <label>โลโก้<input id="certLogo" type="file" accept="image/*"></label>
+                <label>ลายเซ็นผู้มีอำนาจ<input id="certSign" type="file" accept="image/*"></label>
+              </div>
+				<div class="actions">
+				<!--<button type="submit">สร้างเกียรติบัตร</button> -->
+					<button type="button" id="reportBtn">รายงาน</button>
+				</div>
+            </form>
+          
+          <div class="card">
+            <div class="cert" id="certificate"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="users">
+        <div class="section-title"><div><h3>จัดการผู้ใช้งาน</h3><p>Admin และ User กำหนดรหัสผ่านเองได้</p></div></div>
+        <div class="split">
+<div class="card admin-only">
+  <form id="userForm">
+    <input type="hidden" id="userId">
+    
+    <label>ชื่อผู้ใช้<input id="userName" required></label>
+    <label>สิทธิ์<select id="userRole"><option value="admin">Admin</option><option value="user">User</option></select></label>
+    <label>รหัสผ่านตั้งต้น/แก้ไข<input id="userPassword" value="SriRatana@123"></label>
+    
+    <div class="actions">
+      <button type="submit">บันทึกผู้ใช้งาน</button>
+      <button class="secondary" type="button" id="clearUser">ล้างฟอร์ม</button>
+    </div>
+  </form>
+</div>
+          <div class="card"><div class="table-wrap"><table id="usersTable"></table></div></div>
+        </div>
+      </section>
+	  
+	  <div style="padding: 15px; margin-top: auto;">
+			<button id="logoutBtn" style="width: 100%; background: var(--danger); color: white; border: none; padding: 10px; border-radius: var(--radius); cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+				⎋ ออกจากระบบ
+			</button>
+		</div>
+	  <div class="admin-only" style="margin-top: 15px; padding: 0 16px; display: flex; gap: 8px;">
+			<button onclick="backupDatabaseToJson()" style="background: var(--primary); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold;">
+				💾 สำรองข้อมูลระบบ (JSON)
+			</button>
+				<button onclick="document.getElementById('importFile').click()" style="background: var(--accent); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold; margin-left: 8px;">
+				📤 นำเข้าข้อมูล (JSON)
+			</button>
+		<input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDatabaseFromJson(event)">
+		</div>
+    </main>
+  <!-- Script เพิ่มเติมสำหรับควบคุมการเปิด-ปิดเมนูบนสมาร์ตโฟน -->
+  <script>
+    const openMenuBtn = document.getElementById('openMenuBtn');
+    const closeMenuBtn = document.getElementById('closeMenuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const navLinks = document.querySelectorAll('#nav, .role-box, aside button');
+
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+    }
+
+    if(openMenuBtn) openMenuBtn.addEventListener('click', toggleSidebar);
+    if(closeMenuBtn) closeMenuBtn.addEventListener('click', toggleSidebar);
+    if(overlay) overlay.addEventListener('click', toggleSidebar);
+
+    // เมื่อกดเปลี่ยนเมนูบนมือถือ ให้ปิดแถบเมนูอัตโนบัติตัวเอง
+    sidebar.addEventListener('click', (e) => {
+      if(e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('nav')) {
+        if(window.innerWidth <= 768) {
+          toggleSidebar();
+        }
+      }
+    });
+  </script>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
