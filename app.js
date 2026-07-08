@@ -89,6 +89,7 @@ function seed() {
 const $ = id => document.getElementById(id);
 const byId = (list, id) => list.find(x => x.id === id) || {};
 const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
+const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
 const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
 const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
 const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
@@ -927,6 +928,7 @@ function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
     const dataStr = localStorage.getItem(storeKey);
+	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1032,6 +1034,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function getAllUsers() {
     // 1. ลองดึงจาก localStorage ของระบบก่อน
     const stored = localStorage.getItem(storeKey);
+	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbxRfFKHxYUpl7o41uL1XBfZYgADe7CFk_oXnhpQR2ucku-f9uNgbilzODCDzdb8HUVPyw/exec";
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
