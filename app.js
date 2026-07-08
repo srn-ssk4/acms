@@ -1,32 +1,6 @@
 // ==========================================
-// 1. CONSTANTS, INITIAL DATA SEEDS & API CONFIG
+// 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
-const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; // 👈 วาง URL เว็บแอปของคุณที่นี่
-const scriptURL = 'https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec';
-const form = document.getElementById('your-form-id');
-
-form.addEventListener('submit', e => {
-  e.preventDefault(); // สำคัญมาก: กันไม่ให้หน้าเว็บรีเฟรช
-  
-  // ดึงข้อมูลจากฟอร์ม
-  const formData = new FormData(form);
-  
-  // ส่งข้อมูลไปยัง Google Apps Script
-  fetch(scriptURL, { 
-    method: 'POST', 
-    body: formData // หรือส่งเป็น JSON ขึ้นอยู่กับโค้ดฝั่ง Apps Script
-  })
-  .then(response => response.json())
-  .then(data => {
-    if(data.result === 'success') {
-      alert('บันทึกข้อมูลลง Google Sheet สำเร็จ!');
-      form.reset(); // ล้างข้อมูลในฟอร์ม
-    } else {
-      console.error('Error:', data.error);
-    }
-  })
-  .catch(error => console.error('Error!', error.message));
-});
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
 const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
 const navItems = [
@@ -69,13 +43,12 @@ const defaultRegistrations = [
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let db = seed(); // กำหนดค่าเริ่มต้นเป็น Seed เสมอ เพื่อเป็นโครงสร้างหลักไว้ก่อน
+let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
 let certSignUrl = "";
-let certBgUrl = "";
-
+let certBgUrl = ""; // เพิ่มตัวแปรเก็บไฟล์ภาพพื้นหลังต้นฉบับ
 // ==========================================
 // 3. UTILITY FUNCTIONS
 // ==========================================
@@ -115,87 +88,7 @@ function seed() {
 
 const $ = id => document.getElementById(id);
 const byId = (list, id) => list.find(x => x.id === id) || {};
-
-// สั่งให้เซฟลง LocalStorage พร้อมยิง API ขึ้น Cloud ทันทีอย่างถูกต้อง
-const save = () => {
-  localStorage.setItem(storeKey, JSON.stringify(db));
-  saveDataToServer(); 
-};
-
-const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
-const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
-const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
-
-// ==========================================
-// 新 4. ฟังก์ชันสำหรับการรับ-ส่งข้อมูลผ่าน API
-// ==========================================
-async function loadDataFromServer() {
-  try {
-    console.log("กำลังดึงข้อมูลล่าสุดจาก Google Sheets...");
-    const response = await fetch(`${BACKEND_API_URL}?action=getData`);
-    const serverData = await response.json();
-    
-    // ตรวจสอบว่าได้ข้อมูลจาก Server หรือไม่
-    if (serverData && (serverData.schools || serverData.users)) {
-      db = serverData;
-      
-      // 🔒 [จุดสำคัญ] ป้องกันการ Login ไม่ได้: หากข้อมูลจาก Server ไม่มีรายชื่อผู้ใช้งาน ให้สร้างค่าเริ่มต้นใส่เข้าไปทันที
-      if (!db.users || !Array.isArray(db.users) || db.users.length === 0) {
-        console.log("พบข้อมูลผู้ใช้บน Cloud ว่างเปล่า ระบบจะเติมผู้ใช้เริ่มต้นให้");
-        db.users = makeUsers();
-        // สั่งอัปเดตกลับขึ้นเซิร์ฟเวอร์ด้วยเพื่อให้คลาวด์มีข้อมูลผู้ใช้งานชุดนี้
-        saveDataToServer(); 
-      }
-      
-      localStorage.setItem(storeKey, JSON.stringify(db));
-      console.log("ซิงค์ข้อมูลจากเซิร์ฟเวอร์สำเร็จ!");
-      render();
-    } else {
-      console.log("ไม่พบข้อมูลเก่าบน Cloud, ดึงข้อมูลจากฐานเครื่องสำรอง");
-      const local = localStorage.getItem(storeKey);
-      if (local && local !== "null") {
-        db = JSON.parse(local);
-        if (!db.users || db.users.length === 0) db.users = makeUsers();
-      } else {
-        db = seed(); // หากไม่มีข้อมูลที่ไหนเลย ให้ใช้ค่าเริ่มต้นทั้งหมด
-      }
-      render();
-    }
-  } catch (error) {
-    console.error("การโหลดข้อมูลจากคลาวด์ผิดพลาด:", error);
-    const local = localStorage.getItem(storeKey);
-    if (local && local !== "null") {
-      db = JSON.parse(local);
-      if (!db.users || db.users.length === 0) db.users = makeUsers();
-    } else {
-      db = seed();
-    }
-    render();
-  }
-}
-
-async function saveDataToServer() {
-  if (!BACKEND_API_URL || BACKEND_API_URL.startsWith("https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec)) return;
-  try {
-    const response = await fetch(BACKEND_API_URL, {
-      method: "POST",
-      mode: "cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({ action: "updateDatabase", data: db })
-    });
-    const resResult = await response.json();
-    if (resResult.status === "success") {
-      console.log("✅ บันทึกข้อมูลคลาวด์เรียบร้อย");
-    } else {
-      console.error("Server Error:", resResult.message);
-    }
-  } catch (error) {
-    console.error("เครือข่ายขัดข้อง ไม่สามารถซิงค์ขึ้นชีตได้:", error);
-  }
-}
-const $ = id => document.getElementById(id);
-const byId = (list, id) => list.find(x => x.id === id) || {};
-const save = () => localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
+const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
 const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
 const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
 const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
@@ -621,22 +514,7 @@ function bindForms() {
 	if (action === "editUser") editUser(id);
 	if (action === "deleteUser") removeItem("users", id);
   });
-  // ดักจับการคลิกที่ตัว Document เลย ไม่ว่าปุ่มจะถูกสร้างใหม่กี่ครั้งก็ยังใช้งานได้
-document.addEventListener('click', (e) => {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-
-  // ถ้าคลิกปุ่มเปิดเมนู
-  if (e.target.closest('#openMenuBtn')) {
-    sidebar.classList.add('active');
-    overlay.classList.add('active');
-  }
-  // ถ้าคลิกปุ่มปิด หรือคลิกพื้นที่ว่างภายนอก (Overlay) หรือคลิกเมนูข้างใน
-  else if (e.target.closest('#closeMenuBtn') || e.target === overlay || (sidebar && sidebar.contains(e.target) && (e.target.tagName === 'A' || e.target.closest('nav a')))) {
-    sidebar.classList.remove('active');
-    overlay.classList.remove('active');
-  }
-});
+  
   if($("eventSearch")) $("eventSearch").addEventListener("input", renderEvents);
   if($("eventForm")) $("eventForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -1033,8 +911,7 @@ function openReport() {
 function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-   // const dataStr = localStorage.getItem(storeKey);
-	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
+    const dataStr = localStorage.getItem(storeKey);
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1127,74 +1004,6 @@ function importDatabaseFromJson(event) {
 
   reader.readAsText(file);
 }
-// ฟังก์ชันโหลดข้อมูลจาก Google Sheets แทน LocalStorage
-async function loadDataFromServer() {
-  try {
-    // แสดง Loading ในระหว่างรอโหลด (Optional: สามารถสร้าง UI มารองรับได้)
-    console.log("กำลังโหลดข้อมูลล่าสุดจากเซิร์ฟเวอร์...");
-    
-    const response = await fetch(`${BACKEND_API_URL}?action=getData`);
-    const serverData = await response.json();
-    
-    // ตรวจสอบว่ามีข้อมูลส่งกลับมาไหม ถ้ามีโครงสร้างหลักให้เอาไปใช้
-    if (serverData && serverData.schools) {
-      // เอาข้อมูลจาก Server ไปเขียนทับตัวแปร state หลักในแอปของคุณ (เช่น db หรือ database)
-      // สมมติว่าแอปของคุณใช้ตัวแปรชื่อ db ในการเก็บข้อมูลปัจจุบัน:
-      db = serverData;
-      
-      // เซฟลงสำรองใน localStorage เผื่อกรณีฉุกเฉินหลุดการเชื่อมต่อ
-      localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
-      
-      // เรียกฟังก์ชัน Render UI เดิมของแอปคุณเพื่อให้หน้าจอแสดงข้อมูลล่าสุด
-      if (typeof renderApp === "function") renderApp(); 
-      else if (typeof initDashboard === "function") initDashboard();
-      
-      console.log("Sync ข้อมูลเสร็จสิ้น!");
-    } else {
-      console.log("ไม่พบข้อมูลบนเซิร์ฟเวอร์ จะใช้ข้อมูลตั้งต้นในเครื่อง");
-      initDefaultData(); // ฟังก์ชันโหลดข้อมูล Seed เดิมของคุณ
-    }
-  } catch (error) {
-    console.error("โหลดข้อมูลจาก Server ผิดพลาด:", error);
-    // หากเน็ตหลุด ให้ดึงจาก localStorage ประทังไปก่อน
-    const localData = localStorage.getItem(storeKey);
-    if (localData) {
-      db = JSON.parse(localData);
-      if (typeof renderApp === "function") renderApp();
-    }
-  }
-}
-
-// ฟังก์ชันบันทึกข้อมูลก้อนปัจจุบันกลับไปยังเซิร์ฟเวอร์
-async function saveDataToServer() {
-  try {
-    // เซฟลงเครื่องตัวเองก่อนเพื่อความเร็วชั่วคราว
-    localStorage.setItem(storeKey, JSON.stringify(db))saveDataToServer();;
-    
-    // ยิงขึ้น Google Sheets ด้วยระบบคิวของ Apps Script
-    const response = await fetch(BACKEND_API_URL, {
-      method: "POST",
-      mode: "cors", // เปิด cors หรือใช้ no-cors ขึ้นอยู่กับการตั้งค่าเครือข่าย
-      headers: {
-        "Content-Type": "text/plain", // ใช้ text/plain เพื่อเลี่ยงปัญหา Preflight CORS บราว์เซอร์บางตัว
-      },
-      body: JSON.stringify({
-        action: "updateDatabase",
-        data: db
-      })
-    });
-    
-    const resResult = await response.json();
-    if (resResult.status === "success") {
-      console.log("บันทึกข้อมูลลงคลาวด์เรียบร้อย");
-    } else {
-      throw new Error(resResult.message);
-    }
-  } catch (error) {
-    console.error("ไม่สามารถซิงค์ข้อมูลขึ้นเซิร์ฟเวอร์ได้:", error);
-    alert("⚠️ คำเตือน: ระบบบันทึกข้อมูลในเครื่องคุณแล้ว แต่ไม่สามารถอัปเดตขึ้นคลาวด์ร่วมกับคนอื่นได้เนื่องจากเครือข่ายขัดข้อง");
-  }
-}
 init();
 // ===================================================
 // ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
@@ -1208,7 +1017,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function getAllUsers() {
     // 1. ลองดึงจาก localStorage ของระบบก่อน
     const stored = localStorage.getItem(storeKey);
-	const BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -1236,41 +1044,12 @@ document.addEventListener("DOMContentLoaded", () => {
       // ค้นหาบัญชีที่ข้อมูลตรงกัน
       const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
       
-// ค้นหาและแก้ไขเฉพาะบล็อก if (foundUser) ให้เป็นแบบนี้:
+// ค้นหาโค้ดส่วนยืนยันล็อกอินในฟังก์ชัน เช่น $("loginForm").addEventListener("submit", ...)
 if (foundUser) {
-  // 1. บันทึกเซสชันปกติ
+  // บันทึกเซสชันปกติ
   sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
   if (loginOverlay) loginOverlay.style.display = "none";
 
-  // 2. อัปเดตตัวแปรสิทธิ์หลักของระบบ (จุดที่ขาดไป)
-  currentRole = foundUser.role; 
-
-  // 3. ปรับค่าใน select บทบาทให้ตรงกับสิทธิ์ที่ล็อกอินเข้ามา
-  const roleSelect = document.getElementById("roleSelect");
-  if (roleSelect) {
-    roleSelect.value = foundUser.role;
-  }
-
-  const roleBadge = document.getElementById("roleBadge");
-  if (roleBadge) {
-    roleBadge.textContent = `${foundUser.username} (${foundUser.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
-  }
-
-  // 4. สั่งสั่งรันฟังก์ชันรีเฟรชหน้าจอและเมนูใหม่ทั้งหมดทันที (จุดที่ขาดไป)
-  if (typeof render === "function") {
-    render(); 
-  }
-  if (typeof renderNav === "function") {
-    renderNav();
-  }
-
-  alert(`ยินดีต้อนรับเข้าสู่ระบบ: คุณ ${foundUser.username}`);
-
-} else {
-  // รหัสผิดพลาดให้แจ้งเตือน
-  if (loginError) loginError.style.display = "block";
-  document.getElementById("loginPassword").value = "";
-}
   // ⚡ บรรทัดสำคัญ: ปรับสิทธิ์ในแอปตามที่ Account นี้ได้รับจริง ๆ
   const roleSelect = document.getElementById("roleSelect");
  // ค้นหาจุดที่มีการเช็คเปลี่ยนสิทธิ์บทบาทผู้ใช้งาน (Role Change)
@@ -1384,36 +1163,3 @@ if (logoutBtn) {
     }
   });
 }
-// ==========================================
-// ระบบควบคุม Sidebar สำหรับ Smartphone
-// ==========================================
-function setupMobileMenu() {
-  const openMenuBtn = document.getElementById('openMenuBtn');
-  const closeMenuBtn = document.getElementById('closeMenuBtn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
-
-  function toggleSidebar() {
-    if (sidebar) sidebar.classList.toggle('active');
-    if (overlay) overlay.classList.toggle('active');
-  }
-
-  // ใช้การตรวจสอบก่อนผูก Event เสมอเพื่อป้องกัน Error
-  if (openMenuBtn) openMenuBtn.addEventListener('click', toggleSidebar);
-  if (closeMenuBtn) closeMenuBtn.addEventListener('click', toggleSidebar);
-  if (overlay) overlay.addEventListener('click', toggleSidebar);
-
-  // ปิดเมนูอัตโนมัติเมื่อมีการคลิกเปลี่ยนเมนูข้างใน
-  if (sidebar) {
-    sidebar.addEventListener('click', (e) => {
-      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('nav a')) {
-        sidebar.classList.remove('active');
-        if (overlay) overlay.classList.remove('active');
-      }
-    });
-  }
-}
-
-// เรียกใช้งานฟังก์ชันเมื่อ DOM โหลดเสร็จ หรือหลังจากที่แอป Render เมนูเสร็จ
-document.addEventListener("DOMContentLoaded", setupMobileMenu);
-// หากแอปของคุณมีการเคลียร์หน้าจอแล้ววาดใหม่ ให้เรียก setupMobileMenu() อีกครั้งหลังจากวาดเมนูเสร็จ
