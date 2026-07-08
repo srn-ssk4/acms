@@ -119,46 +119,7 @@ function init() {
   bindForms();
   render();
 }
-// ==========================================
-// ระบบควบคุม Sidebar สำหรับ Smartphone
-// ==========================================
-function setupMobileMenu() {
-  const openMenuBtn = document.getElementById('openMenuBtn');
-  const closeMenuBtn = document.getElementById('closeMenuBtn');
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebarOverlay');
 
-  function toggleSidebar() {
-    if (sidebar) sidebar.classList.toggle('active');
-    if (overlay) overlay.classList.toggle('active');
-  }
-
-  // ใช้การตรวจสอบก่อนผูก Event เสมอเพื่อป้องกัน Error
-  if (openMenuBtn) openMenuBtn.addEventListener('click', toggleSidebar);
-  if (closeMenuBtn) closeMenuBtn.addEventListener('click', toggleSidebar);
-  if (overlay) overlay.addEventListener('click', toggleSidebar);
-
-  // ปิดเมนูอัตโนมัติเมื่อมีการคลิกเปลี่ยนเมนูข้างใน
-  if (sidebar) {
-    sidebar.addEventListener('click', (e) => {
-      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('nav a')) {
-        sidebar.classList.remove('active');
-        if (overlay) overlay.classList.remove('active');
-      }
-    });
-  }
-}
-const menuBtn = document.querySelector('openMenuBtn'); // ใส่ Class ของปุ่มเมนูระบบของคุณ
-const sidebar = document.querySelector('sidebar');
-
-if (menuBtn && sidebar) {
-  menuBtn.addEventListener('click', () => {
-    sidebar.classList.toggle('openMenuBtn');
-  });
-}
-// เรียกใช้งานฟังก์ชันเมื่อ DOM โหลดเสร็จ หรือหลังจากที่แอป Render เมนูเสร็จ
-document.addEventListener("DOMContentLoaded", setupMobileMenu);
-// หากแอปของคุณมีการเคลียร์หน้าจอแล้ววาดใหม่ ให้เรียก setupMobileMenu() อีกครั้งหลังจากวาดเมนูเสร็จ
 function showPage(id) {
   currentPage = id;
   document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === id));
