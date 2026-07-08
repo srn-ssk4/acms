@@ -342,43 +342,40 @@ textarea { min-height: 86px; resize: vertical; }
 .sign-line { border-top: 1px solid var(--text); padding-top: 8px; min-width: 180px; }
 
 @media (max-width: 1050px) {
-  .app { grid-template-columns: 1fr; }
-  aside { position: static; height: auto; }
-  nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app { 
+    grid-template-columns: 1fr; 
+    position: relative;
+  }
+  
+  /* ซ่อนเมนูด้านข้างไว้และใช้ fixed position */
+  aside { 
+    position: fixed; 
+    top: 0;
+    left: -280px; /* ซ่อนไว้ฝั่งซ้าย */
+    width: 280px;
+    height: 100vh; 
+    z-index: 99;
+    transition: left 0.3s ease; /* ใส่ animation ตอนเปิด */
+  }
+
+  /* เมื่อเพิ่มคลาส open ให้เลื่อนเมนูออกมาแสดงผล */
+  aside.open {
+    left: 0;
+  }
+  
+  /* ปรับเมนูข้างในให้กลับมาเรียงเป็นแนวตั้งเหมือนเดิม */
+  nav { 
+    grid-template-columns: 1fr; 
+  }
+  
+  /* โค้ดส่วนอื่นๆ ที่มีอยู่เดิมใน @media... */
   .hero, .split, .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
   .form-grid, .form-grid.two { grid-template-columns: 1fr; }
   .color-grid, .theme-preview { grid-template-columns: 1fr; }
   .topbar { align-items: flex-start; flex-direction: column; }
   .toolbar { justify-content: flex-start; }
 }
-@media (max-width: 1050px) {
-  #sidebar {
-    position: fixed;
-    top: 0;
-    left: -280px; /* ซ่อนไว้ทางซ้าย */
-    width: 280px;
-    height: 100vh;
-    z-index: 1000;
-    transition: left 0.3s ease;
-  }
 
-  /* เมื่อมีคลาส active ให้เลื่อนออกมาแสดง */
-  #sidebar.active {
-    left: 0; 
-  }
-
-  /* ตัวเคลือบบังหน้าจอ (Overlay) */
-  #sidebarOverlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
-  }
-  #sidebarOverlay.active {
-    display: block;
-  }
-}
 @media (max-width: 560px) {
   main { padding: 14px; }
   aside { padding: 16px 12px; }
