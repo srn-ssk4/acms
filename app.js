@@ -1,30 +1,23 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPcPTcCtbI2t_8NhYZyfRTRvKb4_jtsR6lI4dVEF4bmq9UuO-FbyVZ7jmMShMfeqh6tg/exec";
-// ฟังก์ชันส่งข้อมูลทีละรายการไปบันทึกบน Google Sheet
-async function syncToGoogleSheet(pageName, action, itemData) {
-  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
+// ปรับปรุงฟังก์ชันเชื่อมต่อให้ใช้งานร่วมกันได้อย่างสมบูรณ์
+function saveSingleDataRealTime(formData) {
+  // นำ URL ที่ได้จากการ Deploy Web App บน Google Apps Script มาใส่ที่นี่
+  const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxgW5tBAugv4yIX5m1mGUFQ6oYqAoMndm7Jbl0JWsMW4tjVPjzx_Vh92WEX6NWbQuIkug/exec";
   
-  // แนบข้อมูลผู้ใช้งานที่กำลังทำรายการไปด้วยเพื่อป้องการสับสน
-  const payload = {
-    ...itemData,
-    updated_by: currentUser.username || 'unknown'
-  };
-
-  try {
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors", // ใช้ no-cors ในกรณีไม่ต้องการจัดการปัญหา CORS เผื่อสคริปต์สลับเซิร์ฟเวอร์
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        page: pageName, // เช่น 'registrations' (ข้อมูลการลงทะเบียน)
-        action: action,   // 'insert' หรือ 'update' หรือ 'delete'
-        payload: payload
-      })
-    });
-    console.log(`ซิงค์ข้อมูลหน้า ${pageName} (${action}) เรียบร้อย`);
-  } catch (err) {
-    console.error("เกิดข้อผิดพลาดในการส่งข้อมูลไป Google Sheets: ", err);
-  }
+  // แปลงค่าเฉพาะที่มีโครงสร้างซับซ้อนให้เป็น String ป้องกันคอลัมน์หลุดใน Excel/Sheet
+  const payload = { ...formData };
+  
+  fetch(GOOGLE_SHEET_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors", // ทำงานข้ามโดเมนแบบเบื้องหลังได้อย่างปลอดภัย
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => {
+    console.log("ซิงค์ข้อมูลลง Google Sheets เรียบร้อยแล้ว (ID: " + formData.id + ")");
+  })
+  .catch(err => console.error("ไม่สามารถบันทึกไปยัง Google Sheets ได้: ", err));
 }
+// ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
@@ -605,14 +598,8 @@ if($("registrationForm")) $("registrationForm").addEventListener("submit", e => 
     if($("regId")) $("regId").value = ""; // เคลียร์ ID หลังบันทึกสำเร็จ
     save(); 
     render();
-  }
- // เรียกฟังก์ชันซิงค์ไป Google Sheet (เพิ่มเข้ามาใหม่เพื่อไม่ให้ข้อมูลซับซ้อน)
-  syncToGoogleSheet("registrations", actionType, item); 
+  });
   
-  e.target.reset();
-  render();
-}); 
-
 if ($("resultForm")) {
   $("resultForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -654,6 +641,102 @@ if ($("resultForm")) {
   });
 }
   
+// ===================================================================
+// อัปเดตในฟังก์ชัน bindForms() ตรงส่วนการกดบันทึกของแต่ละฟอร์ม [source: 2]
+// ===================================================================
+
+// 1. ฟอร์มลงทะเบียนนักเรียน (registrationForm)
+if($("registrationForm")) $("registrationForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const id = $("regId")?.value || nextId("r", db.registrations);
+    const oldReg = byId(db.registrations, id);
+
+    const item = {
+      id,
+      eventId: $("regEvent").value,
+      schoolId: $("regSchool").value,
+      students: $("regStudents").value,
+      teacher: $("regTeacher").value,
+      phone: $("regPhone").value,
+      photo: $("regPhoto").files?.[0]?.name || oldReg.photo || "ยังไม่แนบ",
+      cert: $("regCert").files?.[0]?.name || oldReg.cert || "ยังไม่แนบ",
+      status: oldReg.status || "รอตรวจ",
+      score: oldReg.score !== undefined ? oldReg.score : null,
+      medal: oldReg.medal || null,
+      medalApplied: oldReg.medalApplied || false
+    };
+
+    upsert(db.registrations, item);
+    saveSingleDataRealTime(item); // ⚡ เพิ่มการส่งข้อมูลไป Google Sheets
+    e.target.reset();
+    if($("regId")) $("regId").value = "";
+    save(); 
+    render();
+});
+
+// 2. ฟอร์มบันทึกผลคะแนนการแข่งขัน (resultForm)
+if ($("resultForm")) {
+  $("resultForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const regId = $("resultRegId").value || $("resultRegistration").value;
+    const scoreValue = $("resultScore").value;
+    const score = scoreValue !== "" ? Number(scoreValue) : null;
+    let medal = $("resultMedal").value;
+    const rank = $("resultRank").value !== "" ? Number($("resultRank").value) : null;
+
+    if (!medal && score !== null) { medal = medalFromScore(score); }
+    const targetReg = byId(db.registrations, regId);
+
+    if (!targetReg || !targetReg.id) {
+      alert("ไม่พบข้อมูลการลงทะเบียนแข่งขันที่ตรงกัน");
+      return;
+    }
+
+    targetReg.score = score;
+    targetReg.medal = medal;
+    targetReg.rank = rank;
+
+    save();
+    saveSingleDataRealTime(targetReg); // ⚡ เพิ่มการส่งข้อมูลผลลัพธ์ไปที่แผ่นงาน Google Sheets
+    render();
+    e.target.reset();
+    $("resultRegId").value = ""; 
+    alert("บันทึกคะแนนและผลการแข่งขันเข้าสู่ระบบและ Google Sheet สำเร็จ!");
+  });
+}
+
+// 3. ฟอร์มจัดการโรงเรียน (schoolForm)
+if($("schoolForm")) $("schoolForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const id = $("schoolId").value || nextId("s", db.schools);
+    const item = { id, name:$("schoolName").value, director:$("schoolDirector").value, phone:$("schoolPhone").value, medals: byId(db.schools,id).medals || {gold:0,silver:0,bronze:0,joined:0} };
+    upsert(db.schools, item);
+    saveSingleDataRealTime(item); // ⚡ เพิ่มการส่งข้อมูลโรงเรียนไป Google Sheets
+    e.target.reset(); $("schoolId").value = ""; save(); render();
+});
+
+// 4. ฟอร์มจัดการรายการประกวดแข่งขัน (eventForm)
+if($("eventForm")) $("eventForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const id = $("eventId").value || nextId("e", db.events);
+    const item = {
+      id,
+      name: $("eventName").value,
+      subject: $("eventSubject").value,
+      level: $("eventLevel").value,
+      type: $("eventType").value,
+      members: Number($("eventMembers").value),
+      date: $("eventDate").value,
+      venueId: $("eventVenue").value,
+      teachers: teacherCount(Number($("eventMembers").value))
+    };
+    upsert(db.events, item);
+    saveSingleDataRealTime(item); // ⚡ เพิ่มการส่งข้อมูลรายละเอียดการจัดแข่งไป Google Sheets
+    e.target.reset();
+    $("eventId").value = "";
+    save();
+    render();
+});
   if($("schoolForm")) $("schoolForm").addEventListener("submit", e => {
     e.preventDefault();
     const id = $("schoolId").value || nextId("s", db.schools);
@@ -931,11 +1014,41 @@ function openReport() {
   win.document.write(html);
   win.document.close();
 }
+
+// ==========================================
+// 9. START Database
+// ==========================================
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyPcPTcCtbI2t_8NhYZyfRTRvKb4_jtsR6lI4dVEF4bmq9UuO-FbyVZ7jmMShMfeqh6tg/exec";
-// 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
+
+// 1. ฟังก์ชันสำหรับ "สำรองข้อมูล" (Export JSON)
+function backupDatabaseToJson() {
+  try {
+    // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
+    const dataStr = localStorage.getItem(storeKey);
+    if (!dataStr) {
+      alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
+      return;
+    }
+
+    // สร้าง Blob สำหรับดาวน์โหลดไฟล์
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `backup-sriratana-arts-${new Date().toISOString().slice(0,10)}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    alert("สำรองข้อมูลสำเร็จเรียบร้อยแล้ว!");
+  } catch (error) {
+    console.error(error);
+    alert("เกิดข้อผิดพลาดในการสำรองข้อมูล: " + error.message);
+  }
+}
+
+// 2. ฟังก์ชันสำหรับ "นำเข้าข้อมูล" (Import JSON)
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -943,49 +1056,69 @@ function importDatabaseFromJson(event) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const data = JSON.parse(e.target.result);
+      const contents = e.target.result;
       
-      // เลือกข้อมูลกลุ่มที่ต้องการนำเข้า เช่น โรงเรียน (schools) หรือ ผลการแข่งขัน (results)
-      const targetData = data.schools || data.results || data; 
+      // ทดสอบ Parse ตรวจสอบความถูกต้องของ JSON ก่อนบันทึก
+      const parsed = JSON.parse(contents);
       
-      alert("กำลังนำเข้าข้อมูลไปยัง Google Sheets...");
-      
-      // ส่งข้อมูลชุดใหญ่ไปยัง Google Sheets บันทึกทีเดียว
-      fetch(GOOGLE_SHEET_WEBAPP_URL, {
-        method: "POST",
-        mode: "no-cors", // จำเป็นสำหรับ Google Apps Script Web App
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(targetData)
-      })
-      .then(() => {
-        alert("นำเข้าข้อมูลเรียบร้อยแล้ว! ข้อมูลจะไปปรากฏบน Google Sheets ทันที");
-      })
-      .catch(err => alert("เกิดข้อผิดพลาดในการนำเข้าข้อมูล: " + err));
-
-    } catch (err) {
-      alert("ไฟล์ JSON ไม่ถูกต้อง: " + err);
+      // ยืนยันการทับข้อมูล
+      if (confirm("คำเตือน: การนำเข้าข้อมูลใหม่ จะเขียนทับข้อมูลเดิมทั้งหมดในระบบปัจจุบัน คุณต้องการดำเนินการต่อหรือไม่?")) {
+        localStorage.setItem(storeKey, JSON.stringify(parsed));
+        alert("นำเข้าข้อมูลสำเร็จแล้ว! ระบบจะรีโหลดหน้าเว็บใหม่");
+        window.location.reload(); // รีโหลดเพื่อให้หน้าเว็บดึงข้อมูลใหม่มาแสดงทันที
+      }
+    } catch (error) {
+      alert("ไฟล์ JSON ไม่ถูกต้อง หรือโครงสร้างข้อมูลผิดพลาด ไม่สามารถนำเข้าได้");
+      console.error(error);
     }
   };
   reader.readAsText(file);
 }
+// ==========================================
+// ฟังก์ชันนำเข้าข้อมูลจากไฟล์ JSON
+// ==========================================
+function importDatabaseFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-// 2. ฟังก์ชันสำหรับ "บันทึกเรียลไทม์รายบุคคล" (Real-time / Real-data)
-// เรียกใช้ฟังก์ชันนี้ในขั้นตอนที่กรรมการกด "บันทึกคะแนน" หรือ "ลงทะเบียน"
-function saveSingleDataRealTime(formData) {
-  // formData คือ Object ข้อมูล เช่น { id: "r1", students: "สมชาย", score: 85, medal: "เหรียญทอง" }
-  
-  fetch(GOOGLE_SHEET_WEBAPP_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData)
-  })
-  .then(() => {
-    console.log("บันทึกข้อมูลแบบเรียลไทม์ไปยัง Google Sheets สำเร็จ");
-  })
-  .catch(err => console.error("ไม่สามารถบันทึกเรียลไทม์ได้: ", err));
+  const confirmImport = confirm("คุณต้องการนำเข้าข้อมูลจากไฟล์นี้ใช่หรือไม่?\n*** คำเตือน: ข้อมูลปัจจุบันในระบบทั้งหมดจะถูกแทนที่ด้วยข้อมูลจากไฟล์นี้ทันที ***");
+  if (!confirmImport) {
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const jsonData = JSON.parse(e.target.result);
+      
+      if (typeof jsonData !== 'object' || jsonData === null) {
+        throw new Error("โครงสร้างไฟล์ JSON ไม่ถูกต้อง");
+      }
+
+      // นำข้อมูลเข้าสู่ LocalStorage
+      localStorage.setItem(storeKey, JSON.stringify(jsonData));
+      
+      alert("🎉 นำเข้าข้อมูลสำเร็จแล้ว! ระบบกำลังเริ่มทำงานใหม่และจัดระเบียบหน่วยความจำ...");
+      
+      // ล้าง Session ชั่วคราวเพื่อให้ระบบดึงค่าใหม่จาก LocalStorage มาคำนวณทั้งหมด
+      sessionStorage.clear(); 
+      
+      // บังคับ Hard Reload หน้าเว็บ
+      window.location.href = window.location.pathname;
+
+    } catch (error) {
+      if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+        alert("❌ ไม่สามารถบันทึกได้: ไฟล์ข้อมูลมีขนาดใหญ่เกินขีดจำกัดพื้นที่ของเบราว์เซอร์ (จำกัด 5MB)");
+      } else {
+        alert("❌ เกิดข้อผิดพลาด: ไม่สามารถนำเข้าข้อมูลได้ (" + error.message + ")");
+      }
+      event.target.value = '';
+    }
+  };
+
+  reader.readAsText(file);
 }
-
 init();
 // ===================================================
 // ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
