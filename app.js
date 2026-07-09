@@ -1,3 +1,52 @@
+// กำหนด URL ของ Google Apps Script Web App ที่ได้จากการ Deploy
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; 
+const storeKey = "sriratana-arts-system";
+
+// 1. ฟังก์ชันดึงข้อมูลล่าสุดจาก Google Sheets (ดึงทุกครั้งที่เปิดหน้าหรือโหลดใหม่)
+async function loadDataFromCloud() {
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=getData`);
+    const result = await response.json();
+    if (result.status === "success" && result.data[storeKey]) {
+      // นำข้อมูลที่ได้จาก Cloud ไปใส่ในตัวแปรหลักของระบบคุณ
+      // ตัวอย่างเช่น:
+      // systemData = result.data[storeKey];
+      console.log("โหลดข้อมูลจาก Google Sheets สำเร็จ", result.data[storeKey]);
+      return result.data[storeKey];
+    }
+  } catch (error) {
+    console.error("ไม่สามารถดึงข้อมูลจาก Cloud ได้:", error);
+    alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลปัจจุบัน");
+  }
+}
+
+// 2. ฟังก์ชันบันทึกข้อมูลกลับไปยัง Google Sheets
+async function saveDataToCloud(updatedData) {
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      redirect: "follow", // จำเป็นสำหรับ Google Apps Script Web App
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify({
+        action: "saveData",
+        key: storeKey,
+        value: updatedData
+      })
+    });
+    
+    const result = await response.json();
+    if (result.status === "success") {
+      console.log("บันทึกข้อมูลลง Google Sheets เรียบร้อย");
+    } else {
+      alert("บันทึกไม่สำเร็จ: " + result.message);
+    }
+  } catch (error) {
+    console.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล:", error);
+    alert("ไม่สามารถเชื่อมต่ออินเทอร์เน็ตเพื่อบันทึกข้อมูลได้");
+  }
+}
 // ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
@@ -43,7 +92,7 @@ const defaultRegistrations = [
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
+let db = JSON.parse(fetch());
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
@@ -911,7 +960,7 @@ function openReport() {
 function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-    const dataStr = localStorage.getItem(storeKey);
+    const dataStr = fetch();
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1016,7 +1065,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
   function getAllUsers() {
     // 1. ลองดึงจาก localStorage ของระบบก่อน
-    const stored = localStorage.getItem(storeKey);
+    const stored = fetch();
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
