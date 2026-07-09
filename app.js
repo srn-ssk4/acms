@@ -47,6 +47,18 @@ async function saveDataToCloud(updatedData) {
     alert("ไม่สามารถเชื่อมต่ออินเทอร์เน็ตเพื่อบันทึกข้อมูลได้");
   }
 }
+function doGet(e) {
+  // เช็คว่า e หรือ e.parameter มีตัวตนอยู่จริงไหม (ถ้าไม่มีให้แจ้งเตือนกลับไป)
+  if (!e || !e.parameter) {
+    return ContentService.createTextOutput(JSON.stringify({ 
+      status: "error", 
+      message: "ไม่สามารถเรียกใช้งานฟังก์ชันนี้โดยตรงจาก Apps Script ได้ กรุณาเชื่อมต่อผ่าน Web App หรือใส่ Parameter บังคับ" 
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Database");
+  // ... โค้ดเดิมของคุณ ...
+}
 // ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
