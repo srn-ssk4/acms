@@ -54,6 +54,6 @@ function seed() {
       { id:"j1", eventId:"e1", name:"ครูใจดี มีสุข", role:"ครู/บุคลากร", rank:"ครูชำนาญการ", phone:"0851111111" },
     ],
     users: makeUsers(),
-    certNo: 26
+    certNo: 368
   };
 }

@@ -12,6 +12,71 @@ async function startApp() {
   }
   init();
 }
+// ==========================================
+// ระบบจัดการการเข้าสู่ระบบ (Login System)
+// ==========================================
+
+function setupLogin() {
+  const loginOverlay = document.getElementById("loginOverlay");
+  const loginForm = document.getElementById("mainLoginForm");
+
+  // 1. ตรวจสอบก่อนว่าเคย Login ค้างไว้ใน Session ไหม
+  const cachedUser = sessionStorage.getItem("currentUser");
+  if (cachedUser) {
+    if (loginOverlay) loginOverlay.style.display = "none"; // ถ้าเคยล็อกอินแล้ว ให้ซ่อนหน้าต่างล็อกอินเลย
+    return;
+  }
+
+  // 2. ดักจับการกดปุ่ม "เข้าสู่ระบบ"
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault(); // ป้องกันหน้าเว็บ รีเฟรช
+
+      const usernameInput = document.getElementById("username")?.value.trim();
+      const passwordInput = document.getElementById("password")?.value.trim();
+
+      if (!usernameInput || !passwordInput) {
+        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน");
+        return;
+      }
+
+      // 3. ตรวจสอบข้อมูลกับ db.users (ตรวจสอบว่า db มีอยู่และโหลดมาแล้ว)
+      if (typeof db !== "undefined" && db.users) {
+        const user = db.users.find(u => u.username === usernameInput && u.password === passwordInput);
+
+        if (user) {
+          // หากข้อมูลถูกต้อง บันทึกลง Session
+          sessionStorage.setItem("currentUser", JSON.stringify(user));
+          
+          alert(`ยินดีต้อนรับคุณ ${user.name || user.username}`);
+          
+          // ซ่อนหน้าต่าง Login เพื่อเข้าสู่หน้าจอหลัก
+          if (loginOverlay) loginOverlay.style.display = "none";
+          
+          // (ตัวเลือกเพิ่มเติม) สั่งเปิดหน้าแดชบอร์ดหรือรีโหลดการทำงานตามระบบของคุณ
+          if (typeof render === "function") render(); 
+
+        } else {
+          alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+        }
+      } else {
+        alert("ระบบกำลังโหลดข้อมูลจากคลาวด์ หรือยังไม่มีข้อมูลผู้ใช้งานในระบบ");
+      }
+    });
+  }
+}
+async function startApp() {
+  const cloudData = await loadDataFromCloud();
+  if (cloudData) {
+     db = cloudData;
+  } else {
+     db = seed();
+  }
+  init();
+  
+  setupLogin(); // 👈 เพิ่มฟังก์ชันนี้เข้าไปท้ายสุดเพื่อให้ระบบเริ่มดักจับการ Login
+}
+
 // 1. ฟังก์ชันดึงข้อมูลล่าสุดจาก Google Sheets (ดึงทุกครั้งที่เปิดหน้าหรือโหลดใหม่)
 async function loadDataFromCloud() {
   try {
