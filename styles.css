@@ -364,10 +364,45 @@ textarea { min-height: 86px; resize: vertical; }
   opacity: 1;
   pointer-events: auto;
 }
+/* ==========================================================================
+   ระบบควบคุมการแสดงผลบนสมาร์ทโฟน/แท็บเล็ต (รองรับแนวตั้งและแนวนอน)
+   ========================================================================== */
 
-/* ตั้งค่าเมื่อหน้าจอแสดงผลเล็กลง (สมาร์ตโฟนและแท็บเล็ต) */
+/* ซ่อนปุ่มเปิด/ปิดเมนู และ Overlay บนหน้าจอคอมพิวเตอร์เป็นค่าเริ่มต้น */
+.mobile-menu-btn {
+  display: none !important;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 24, 34, 0.6);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @media (max-width: 1050px) {
-  /* เปิดให้แสดงปุ่มเปิดเมนูในหน้าหลัก */
+  /* 1. จัดการโครงสร้างหลัก (Layout) ให้พอดีหน้าจอ 100% ไม่ล้น */
+  .app { 
+    grid-template-columns: 1fr; 
+    width: 100%;
+    overflow-x: hidden; /* ป้องกันหน้าจอสไลด์ออกด้านข้าง */
+  }
+  
+  main { 
+    padding: 16px; 
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* 2. เปิดใช้งานปุ่มเปิด-ปิดเมนูบนอุปกรณ์พกพา */
   #openMenuBtn {
     display: inline-flex !important;
     align-items: center;
@@ -375,38 +410,87 @@ textarea { min-height: 86px; resize: vertical; }
     background: var(--primary);
   }
   
-  /* เปิดให้แสดงปุ่มปิดเมนูใน Sidebar */
   #closeMenuBtn {
     display: block !important;
   }
 
-  /* ปรับแต่ง Sidebar ให้ซ่อนอยู่ฝั่งซ้ายของจอ */
+  /* 3. จัดการแถบเมนูด้านข้าง (Sidebar Aside) */
   aside {
     position: fixed !important;
     top: 0;
-    left: -290px; /* ดันออกไปนอกจอทางซ้าย */
+    left: -290px; /* ซ่อนไว้ฝั่งซ้ายนอกจอ */
     width: 280px;
     height: 100vh;
     z-index: 9999;
     transition: left 0.3s ease-in-out;
     box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+    overflow-y: auto; /* ให้เลื่อนดูเมนูแนวตั้งได้หากจอมือถือสั้น */
   }
 
-  /* เมื่อมีการเติมคลาส .active (จากการกดปุ่ม) ให้เลื่อน Sidebar ออกมา */
   aside.active {
-    left: 0;
+    left: 0; /* เลื่อนออกมาเมื่อกดเปิดเมนู */
   }
 
-  /* ปรับให้เมนูกลับมาเรียงเป็นแนวดิ่งตามปกติในแถบ Sidebar ด้านข้าง */
   nav {
     grid-template-columns: 1fr !important;
   }
+
+  /* 4. ปรับเปลี่ยน Grid และกล่องเนื้อหาต่าง ๆ ให้ยุบเรียงเป็นแถวเดี่ยวเมื่อจอแคบ */
+  .hero, .split, .grid.cols-4, .grid.cols-3, .grid.cols-2, .form-grid, .form-grid.two, .color-grid, .theme-preview { 
+    grid-template-columns: 1fr !important; 
+    gap: 14px;
+  }
+
+  /* 5. แก้ไขตาราง (Tables) ไม่ให้ดันหน้าขอบจอจนหลุด */
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto; /* เปิดให้ปัดซ้าย-ขวาเพื่อดูตารางเต็ม ๆ ได้บนมือถือ */
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  
+  table { 
+    min-width: 100%; /* เปลี่ยนจากค่าคงที่ให้ยืดหยุ่นตามเนื้อหา */
+  }
+  
+  th, td { 
+    white-space: nowrap; /* คงสภาพอักษรไม่ให้ตัดมั่วซั่วในตาราง */
+    font-size: 14px; 
+    padding: 10px 8px;
+  }
+
+  /* ==========================================================================
+     เงื่อนไขพิเศษ: เมื่อผู้ใช้งาน "หมุนหน้าจอสมาร์ทโฟนเป็นแนวนอน" (Landscape)
+     ========================================================================== */
+  @media (orientation: landscape) {
+    /* ในแนวนอนมีพื้นที่ด้านกว้างเพิ่มขึ้น ปรับให้ Grid แสดง 2 คอลัมน์เพื่อความสวยงาม ไม่ยาวเกินไป */
+    .grid.cols-4, .grid.cols-2, .form-grid.two { 
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important; 
+    }
+    
+    .hero {
+      grid-template-columns: 1.2fr 0.8fr !important; /* ให้แผงสถิติกับแผนผังกลับมาอยู่ข้างกันได้ */
+    }
+    
+    .hero-panel {
+      min-height: 180px; /* ลดความสูงลงเล็กน้อยให้พอดีสายตาในแนวนอน */
+    }
+
+    .theme-preview {
+      grid-template-columns: 160px 1fr !important; /* จัดหน้าพรีวิวธีมแยกซ้ายขวา */
+    }
+  }
 }
+
+/* ปรับแต่งเพิ่มเติมสำหรับสมาร์ทโฟนหน้าจอเล็กมาก */
 @media (max-width: 560px) {
-  main { padding: 14px; }
-  aside { padding: 16px 12px; }
-  nav { grid-template-columns: 1fr; }
-  .hero-panel { min-height: 300px; }
-  .cert { padding: 28px; min-height: 360px; }
-  .sign-row { flex-direction: column; align-items: center; }
+  main { padding: 12px; }
+  .cert { 
+    padding: 24px; 
+    min-height: auto; 
+    aspect-ratio: auto; /* ปลดล็อกสัดส่วนเกียรติบัตรเพื่อให้ไม่ล้นหน้าจอแนวตั้ง */
+  }
+  .sign-row { flex-direction: column; align-items: center; gap: 15px; }
 }
