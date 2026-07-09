@@ -902,7 +902,7 @@ function openReport() {
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwsIrCIAUgIfx9kzNhOnVhV4RSCZ6zmabaH2YrtOk-j1FN5z-k6I3ZCQ8kKzlbDFe-VKg/exec";
 // 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
