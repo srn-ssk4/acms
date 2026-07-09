@@ -899,41 +899,11 @@ function openReport() {
   win.document.write(html);
   win.document.close();
 }
-
-// ==========================================
-// 9. START Database
-// ==========================================
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-
-// 1. ฟังก์ชันสำหรับ "สำรองข้อมูล" (Export JSON)
-function backupDatabaseToJson() {
-  try {
-    // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-    const dataStr = localStorage.getItem(storeKey);
-    if (!dataStr) {
-      alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
-      return;
-    }
-
-    // สร้าง Blob สำหรับดาวน์โหลดไฟล์
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `backup-sriratana-arts-${new Date().toISOString().slice(0,10)}.json`;
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    alert("สำรองข้อมูลสำเร็จเรียบร้อยแล้ว!");
-  } catch (error) {
-    console.error(error);
-    alert("เกิดข้อผิดพลาดในการสำรองข้อมูล: " + error.message);
-  }
-}
-
-// 2. ฟังก์ชันสำหรับ "นำเข้าข้อมูล" (Import JSON)
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
+// 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -941,69 +911,49 @@ function importDatabaseFromJson(event) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const contents = e.target.result;
+      const data = JSON.parse(e.target.result);
       
-      // ทดสอบ Parse ตรวจสอบความถูกต้องของ JSON ก่อนบันทึก
-      const parsed = JSON.parse(contents);
+      // เลือกข้อมูลกลุ่มที่ต้องการนำเข้า เช่น โรงเรียน (schools) หรือ ผลการแข่งขัน (results)
+      const targetData = data.schools || data.results || data; 
       
-      // ยืนยันการทับข้อมูล
-      if (confirm("คำเตือน: การนำเข้าข้อมูลใหม่ จะเขียนทับข้อมูลเดิมทั้งหมดในระบบปัจจุบัน คุณต้องการดำเนินการต่อหรือไม่?")) {
-        localStorage.setItem(storeKey, JSON.stringify(parsed));
-        alert("นำเข้าข้อมูลสำเร็จแล้ว! ระบบจะรีโหลดหน้าเว็บใหม่");
-        window.location.reload(); // รีโหลดเพื่อให้หน้าเว็บดึงข้อมูลใหม่มาแสดงทันที
-      }
-    } catch (error) {
-      alert("ไฟล์ JSON ไม่ถูกต้อง หรือโครงสร้างข้อมูลผิดพลาด ไม่สามารถนำเข้าได้");
-      console.error(error);
+      alert("กำลังนำเข้าข้อมูลไปยัง Google Sheets...");
+      
+      // ส่งข้อมูลชุดใหญ่ไปยัง Google Sheets บันทึกทีเดียว
+      fetch(GOOGLE_SHEET_WEBAPP_URL, {
+        method: "POST",
+        mode: "no-cors", // จำเป็นสำหรับ Google Apps Script Web App
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(targetData)
+      })
+      .then(() => {
+        alert("นำเข้าข้อมูลเรียบร้อยแล้ว! ข้อมูลจะไปปรากฏบน Google Sheets ทันที");
+      })
+      .catch(err => alert("เกิดข้อผิดพลาดในการนำเข้าข้อมูล: " + err));
+
+    } catch (err) {
+      alert("ไฟล์ JSON ไม่ถูกต้อง: " + err);
     }
   };
   reader.readAsText(file);
 }
-// ==========================================
-// ฟังก์ชันนำเข้าข้อมูลจากไฟล์ JSON
-// ==========================================
-function importDatabaseFromJson(event) {
-  const file = event.target.files[0];
-  if (!file) return;
 
-  const confirmImport = confirm("คุณต้องการนำเข้าข้อมูลจากไฟล์นี้ใช่หรือไม่?\n*** คำเตือน: ข้อมูลปัจจุบันในระบบทั้งหมดจะถูกแทนที่ด้วยข้อมูลจากไฟล์นี้ทันที ***");
-  if (!confirmImport) {
-    event.target.value = '';
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const jsonData = JSON.parse(e.target.result);
-      
-      if (typeof jsonData !== 'object' || jsonData === null) {
-        throw new Error("โครงสร้างไฟล์ JSON ไม่ถูกต้อง");
-      }
-
-      // นำข้อมูลเข้าสู่ LocalStorage
-      localStorage.setItem(storeKey, JSON.stringify(jsonData));
-      
-      alert("🎉 นำเข้าข้อมูลสำเร็จแล้ว! ระบบกำลังเริ่มทำงานใหม่และจัดระเบียบหน่วยความจำ...");
-      
-      // ล้าง Session ชั่วคราวเพื่อให้ระบบดึงค่าใหม่จาก LocalStorage มาคำนวณทั้งหมด
-      sessionStorage.clear(); 
-      
-      // บังคับ Hard Reload หน้าเว็บ
-      window.location.href = window.location.pathname;
-
-    } catch (error) {
-      if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
-        alert("❌ ไม่สามารถบันทึกได้: ไฟล์ข้อมูลมีขนาดใหญ่เกินขีดจำกัดพื้นที่ของเบราว์เซอร์ (จำกัด 5MB)");
-      } else {
-        alert("❌ เกิดข้อผิดพลาด: ไม่สามารถนำเข้าข้อมูลได้ (" + error.message + ")");
-      }
-      event.target.value = '';
-    }
-  };
-
-  reader.readAsText(file);
+// 2. ฟังก์ชันสำหรับ "บันทึกเรียลไทม์รายบุคคล" (Real-time / Real-data)
+// เรียกใช้ฟังก์ชันนี้ในขั้นตอนที่กรรมการกด "บันทึกคะแนน" หรือ "ลงทะเบียน"
+function saveSingleDataRealTime(formData) {
+  // formData คือ Object ข้อมูล เช่น { id: "r1", students: "สมชาย", score: 85, medal: "เหรียญทอง" }
+  
+  fetch(GOOGLE_SHEET_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData)
+  })
+  .then(() => {
+    console.log("บันทึกข้อมูลแบบเรียลไทม์ไปยัง Google Sheets สำเร็จ");
+  })
+  .catch(err => console.error("ไม่สามารถบันทึกเรียลไทม์ได้: ", err));
 }
+
 init();
 // ===================================================
 // ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
