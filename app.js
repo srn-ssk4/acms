@@ -76,6 +76,40 @@ function importDatabaseFromJson(event) {
   };
   reader.readAsText(file);
 }
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec""; // URL เว็บแอปของคุณ
+
+// ฟังก์ชัน "สำรองข้อมูลระบบ" ลง Google Sheet โดยตรง
+async function backupDatabaseToSheet() {
+  // ดึงข้อมูลระบบปัจจุบันที่คุณใช้อยู่ (สมมติว่าชื่อตัวแปรระบบคือ window.systemData)
+  if (!window.systemData) {
+    alert("ไม่พบข้อมูลระบบที่ต้องการสำรอง");
+    return;
+  }
+
+  // แสดง Loading หรือเปลี่ยนข้อความที่ปุ่มชั่วคราวเพื่อบอกผู้ใช้ว่ากำลังบันทึก
+  console.log("กำลังสำรองข้อมูลลง Google Sheet...");
+  
+  try {
+    let response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "backupToSheet",
+        data: window.systemData // ส่งก้อนข้อมูลระบบทั้งหมดไปจัดเก็บ
+      })
+    });
+    
+    let result = await response.json();
+    
+    if (result.status === "success") {
+      alert("🔒 " + result.message);
+    } else {
+      alert("❌ เกิดข้อผิดพลาดจากระบบ: " + result.message);
+    }
+  } catch (error) {
+    console.error("การสำรองข้อมูลล้มเหลว:", error);
+    alert("❌ ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ในขณะนี้");
+  }
+}
 // ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
