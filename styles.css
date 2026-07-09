@@ -341,24 +341,6 @@ textarea { min-height: 86px; resize: vertical; }
 .sign-row { display: flex; justify-content: space-around; width: 100%; margin-top: 30px; gap: 20px; }
 .sign-line { border-top: 1px solid var(--text); padding-top: 8px; min-width: 180px; }
 
-@media (max-width: 1050px) {
-  .app { grid-template-columns: 1fr; }
-  aside { position: static; height: auto; }
-  nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hero, .split, .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; }
-  .form-grid, .form-grid.two { grid-template-columns: 1fr; }
-  .color-grid, .theme-preview { grid-template-columns: 1fr; }
-  .topbar { align-items: flex-start; flex-direction: column; }
-  .toolbar { justify-content: flex-start; }
-}
-@media (max-width: 560px) {
-  main { padding: 14px; }
-  aside { padding: 16px 12px; }
-  nav { grid-template-columns: 1fr; }
-  .hero-panel { min-height: 300px; }
-  .cert { padding: 28px; min-height: 360px; }
-  .sign-row { flex-direction: column; align-items: center; }
-}
 /* ==========================================================================
    เพิ่มเติมสำหรับระบบ Mobile Menu (เปิด-ปิดเมนูบนสมาร์ตโฟน)
    ========================================================================== */
@@ -419,4 +401,12 @@ textarea { min-height: 86px; resize: vertical; }
   nav {
     grid-template-columns: 1fr !important;
   }
+}
+@media (max-width: 560px) {
+  main { padding: 14px; }
+  aside { padding: 16px 12px; }
+  nav { grid-template-columns: 1fr; }
+  .hero-panel { min-height: 300px; }
+  .cert { padding: 28px; min-height: 360px; }
+  .sign-row { flex-direction: column; align-items: center; }
 }
