@@ -1,4 +1,30 @@
-// ==========================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyPcPTcCtbI2t_8NhYZyfRTRvKb4_jtsR6lI4dVEF4bmq9UuO-FbyVZ7jmMShMfeqh6tg/exec";
+// ฟังก์ชันส่งข้อมูลทีละรายการไปบันทึกบน Google Sheet
+async function syncToGoogleSheet(pageName, action, itemData) {
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser") || "{}");
+  
+  // แนบข้อมูลผู้ใช้งานที่กำลังทำรายการไปด้วยเพื่อป้องการสับสน
+  const payload = {
+    ...itemData,
+    updated_by: currentUser.username || 'unknown'
+  };
+
+  try {
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      mode: "no-cors", // ใช้ no-cors ในกรณีไม่ต้องการจัดการปัญหา CORS เผื่อสคริปต์สลับเซิร์ฟเวอร์
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        page: pageName, // เช่น 'registrations' (ข้อมูลการลงทะเบียน)
+        action: action,   // 'insert' หรือ 'update' หรือ 'delete'
+        payload: payload
+      })
+    });
+    console.log(`ซิงค์ข้อมูลหน้า ${pageName} (${action}) เรียบร้อย`);
+  } catch (err) {
+    console.error("เกิดข้อผิดพลาดในการส่งข้อมูลไป Google Sheets: ", err);
+  }
+}
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
 const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
@@ -579,8 +605,14 @@ if($("registrationForm")) $("registrationForm").addEventListener("submit", e => 
     if($("regId")) $("regId").value = ""; // เคลียร์ ID หลังบันทึกสำเร็จ
     save(); 
     render();
-  });
+  }
+ // เรียกฟังก์ชันซิงค์ไป Google Sheet (เพิ่มเข้ามาใหม่เพื่อไม่ให้ข้อมูลซับซ้อน)
+  syncToGoogleSheet("registrations", actionType, item); 
   
+  e.target.reset();
+  render();
+}); 
+
 if ($("resultForm")) {
   $("resultForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -902,7 +934,7 @@ function openReport() {
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwsIrCIAUgIfx9kzNhOnVhV4RSCZ6zmabaH2YrtOk-j1FN5z-k6I3ZCQ8kKzlbDFe-VKg/exec";
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyPcPTcCtbI2t_8NhYZyfRTRvKb4_jtsR6lI4dVEF4bmq9UuO-FbyVZ7jmMShMfeqh6tg/exec";
 // 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
