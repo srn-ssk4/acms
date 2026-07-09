@@ -1,3 +1,81 @@
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; // เอา URL ที่ได้จากการ Deploy มาใส่ที่นี่
+
+// ฟังก์ชันโหลดข้อมูลล่าสุดจาก Google Sheet
+async function loadDataFromCloud() {
+  try {
+    let response = await fetch(WEB_APP_URL);
+    let cloudData = await response.json();
+    // นำ cloudData ไปใส่ในตัวแปรระบบของคุณ (แทนที่การใช้ localStorage)
+    window.systemData = cloudData; 
+    console.log("โหลดข้อมูลจาก Google Sheet สำเร็จ");
+    // เรียกฟังก์ชัน Render หน้าจอของคุณต่อที่นี่...
+  } catch (error) {
+    console.error("ไม่สามารถดึงข้อมูลได้:", error);
+  }
+}
+
+// ฟังก์ชันบันทึกข้อมูลไปยัง Google Sheet แบบป้องกันการซ้อนทับ
+async function saveDataToCloud(newData) {
+  try {
+    let response = await fetch(WEB_APP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "update",
+        data: newData
+      })
+    });
+    let result = await response.json();
+    if(result.status === "success") {
+      alert("บันทึกข้อมูลขึ้นระบบคลาวด์แล้ว!");
+    } else {
+      alert("เกิดข้อผิดพลาด: " + result.message);
+    }
+  } catch (error) {
+    console.error("บันทึกล้มเหลว:", error);
+  }
+}
+// สำรองข้อมูลระบบ (Download JSON จาก Google Sheet ผ่านเว็บแอปมาเก็บในเครื่อง)
+async function backupDatabaseAsJson() {
+  try {
+    // ดึงข้อมูลล่าสุดจาก Sheet ก่อนดาวน์โหลดเพื่อความแม่นยำ
+    let response = await fetch(WEB_APP_URL);
+    let dataToBackup = await response.json();
+    
+    // แปลงไฟล์เป็น Blob เพื่อสั่งดาวน์โหลดลงเครื่องคอมพิวเตอร์
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToBackup, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `backup-sriratana-arts-${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  } catch (error) {
+    alert("ไม่สามารถสำรองข้อมูลได้ในขณะนี้");
+  }
+}
+
+// นำเข้าข้อมูล (Upload JSON จากเครื่องคอมพิวเตอร์ ไปทับบน Google Sheet)
+function importDatabaseFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      if (confirm("คุณแน่ใจใช่หรือไม่ที่จะนำเข้าข้อมูลนี้? ข้อมูลเดิมบน Google Sheet จะถูกเขียนทับทั้งหมด!")) {
+        // ส่งข้อมูลที่ Import ไปบันทึกใน Google Sheet
+        await saveDataToCloud(importedData);
+        // โหลดหน้าจอใหม่เพื่อให้ข้อมูลอัปเดตตามไฟล์ที่นำเข้า
+        loadDataFromCloud(); 
+      }
+    } catch (err) {
+      alert("ไฟล์ JSON ไม่ถูกต้อง หรือโครงสร้างข้อมูลผิดพลาด");
+    }
+  };
+  reader.readAsText(file);
+}
 // ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
