@@ -1,158 +1,49 @@
-// กำหนด URL ของ Google Apps Script Web App ที่ได้จากการ Deploy
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; 
+// ==========================================
+// 1. CONSTANTS & INITIAL DATA SEEDS
+// ==========================================
+const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
+const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
+const navItems = [
+  ["dashboard","▦","แดชบอร์ด"],["rankings","▤","ตารางอันดับ"],["events","☰","รายการแข่งขัน"],["registration","＋","ลงทะเบียนนักเรียน"],
+  ["results","✓","บันทึกผลการแข่งขัน"],["schools","⌂","จัดการโรงเรียน"],["venues","⌖","จัดการสนามแข่งขัน"],["judges","⚖","กรรมการตัดสิน"],
+  ["documents","□","ตรวจเอกสาร"],["reports","◫","รายงาน"],["users","◎","จัดการผู้ใช้งาน"]
+];
+const today = new Date().toISOString().slice(0,10);
 const storeKey = "sriratana-arts-system";
 
-// ตัวอย่างการโหลดข้อมูลที่ถูกต้องในฟังก์ชัน init() หรือก่อน render()
-async function startApp() {
-  const cloudData = await loadDataFromCloud();
-  if (cloudData) {
-     db = cloudData;
-  } else {
-     db = seed();
-  }
-  init();
-}
-// ==========================================
-// ระบบจัดการการเข้าสู่ระบบ (Login System)
-// ==========================================
+const themeDefaults = {
+  default: { bg:"#f5f7fb", panel:"#ffffff", text:"#14202e", line:"#d9e2ec", primary:"#126a6f", primary2:"#0e8780", accent:"#d28722", sidebar:"#12202e", heroFrom:"#126a6f", heroTo:"#0e8780", radius:8, font:'"Segoe UI", Tahoma, sans-serif' },
+  royal: { bg:"#f6f3ee", panel:"#fffdf8", text:"#1f2230", line:"#ded3c2", primary:"#6d214f", primary2:"#a13664", accent:"#b8860b", sidebar:"#23182a", heroFrom:"#6d214f", heroTo:"#a13664", radius:8, font:'"Segoe UI", Tahoma, sans-serif' },
+  fresh: { bg:"#f3fbf6", panel:"#ffffff", text:"#10231a", line:"#cce2d4", primary:"#227447", primary2:"#3a9d63", accent:"#e0a100", sidebar:"#163826", heroFrom:"#227447", heroTo:"#3a9d63", radius:8, font:'"Segoe UI", Tahoma, sans-serif' }
+};
 
-function setupLogin() {
-  const loginOverlay = document.getElementById("loginOverlay");
-  const loginForm = document.getElementById("mainLoginForm");
+const themeFields = {
+  bg:"themeBg", panel:"themePanelColor", text:"themeText", line:"themeLine", primary:"themePrimary", primary2:"themePrimary2",
+  accent:"themeAccent", sidebar:"themeSidebar", heroFrom:"themeHeroFrom", heroTo:"themeHeroTo", radius:"themeRadius", font:"themeFont"
+};
 
-  // 1. ตรวจสอบก่อนว่าเคย Login ค้างไว้ใน Session ไหม
-  const cachedUser = sessionStorage.getItem("currentUser");
-  if (cachedUser) {
-    if (loginOverlay) loginOverlay.style.display = "none"; // ถ้าเคยล็อกอินแล้ว ให้ซ่อนหน้าต่างล็อกอินเลย
-    return;
-  }
+const defaultSchools = [
+  "บ้านศรีแก้ว","บ้านหนองสังข์","บ้านพิวพวย(เสียงราษฎร์พัฒนา)","บ้านศิลาทอง","บ้านบกห้วยโนน","บ้านตระกวน","อนุบาลศรีรัตนะ","บ้านตระกาจ",
+  "บ้านตาแบน","โชติพันธุ์วิทยาสามัคคี","บ้านหนองรุง","บ้านโนนแก","บ้านปุน","บ้านขนาด","บ้านหนองบัวทอง","บ้านทุ่งสว่าง","บ้านจอก(ประชาสามัคคี)",
+  "บ้านสะพุง","บ้านหนองปิงโปง","บ้านจานบัว","บ้านเสื่องข้าว","บ้นกระหวัน","บ้านตูม(นพค.15 กรป.กลางอุปถัมภ์)","บ้านหนองใหญ่-ตาไทย","บ้านสลับ","บ้านตายู(อสพป.32)"
+].map((name, i) => ({ id: "s"+(i+1), name, director: "ผอ."+["ก้อ"][i%5]+"ใจดี", phone: "08"+String(12000000+i*137).slice(0,8), medals: { gold: (i*3)%9, silver: (i*5)%7, bronze: (i*2)%8, joined: 6+(i%9) }}));
 
-  // 2. ดักจับการกดปุ่ม "เข้าสู่ระบบ"
-  if (loginForm) {
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault(); // ป้องกันหน้าเว็บ รีเฟรช
+const defaultVenues = [
+  { id:"v1", name:"หอประชุมศรีรัตนะ", host:"โรงเรียนบ้านศรีรัตนะ", contact:"ครูสุภาวดี 081-234-5678" },
+];
 
-      const usernameInput = document.getElementById("username")?.value.trim();
-      const passwordInput = document.getElementById("password")?.value.trim();
+const defaultEvents = [
+  ["คัดลายมือสื่อภาษาไทย","ภาษาไทย","ป.1-3","เดี่ยว",1,today,"v1"],
+].map((e,i)=>({ id:"e"+(i+1), name:e[0], subject:e[1], level:e[2], type:e[3], members:e[4], date:e[5], venueId:e[6], teachers: teacherCount(e[4]) }));
 
-      if (!usernameInput || !passwordInput) {
-        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน");
-        return;
-      }
+const defaultRegistrations = [
+  { id:"r1", eventId:"e1", schoolId:"s1", students:"ด.ญ.ใจดี", teacher:"ครูรัตน์", phone:"0811111111", photo:"แนบแล้ว", cert:"แนบแล้ว", status:"รอตรวจ", score:null, medal:null },
+];
 
-      // 3. ตรวจสอบข้อมูลกับ db.users (ตรวจสอบว่า db มีอยู่และโหลดมาแล้ว)
-      if (typeof db !== "undefined" && db.users) {
-        const user = db.users.find(u => u.username === usernameInput && u.password === passwordInput);
-
-        if (user) {
-          // หากข้อมูลถูกต้อง บันทึกลง Session
-          sessionStorage.setItem("currentUser", JSON.stringify(user));
-          
-          alert(`ยินดีต้อนรับคุณ ${user.name || user.username}`);
-          
-          // ซ่อนหน้าต่าง Login เพื่อเข้าสู่หน้าจอหลัก
-          if (loginOverlay) loginOverlay.style.display = "none";
-          
-          // (ตัวเลือกเพิ่มเติม) สั่งเปิดหน้าแดชบอร์ดหรือรีโหลดการทำงานตามระบบของคุณ
-          if (typeof render === "function") render(); 
-
-        } else {
-          alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
-        }
-      } else {
-        alert("ระบบกำลังโหลดข้อมูลจากคลาวด์ หรือยังไม่มีข้อมูลผู้ใช้งานในระบบ");
-      }
-    });
-  }
-}
-async function startApp() {
-  const cloudData = await loadDataFromCloud();
-  if (cloudData) {
-     db = cloudData;
-  } else {
-     db = seed();
-  }
-  init();
-  
-  setupLogin(); // 👈 เพิ่มฟังก์ชันนี้เข้าไปท้ายสุดเพื่อให้ระบบเริ่มดักจับการ Login
-}
-// ตรวจสอบและสร้างฐานข้อมูลจำลองเริ่มต้นใน data.js
-if (!localStorage.getItem('db.user')) {
-  var db = {
-    // กำหนดบัญชีผู้ใช้งานเริ่มต้นไว้ที่นี่แทนการใช้ฟังก์ชันสร้างอัตโนมัติ
-    users: [
-      { id: "1", username: "admin", password: "pop@123", role: "admin" },
-      { id: "2", username: "user", password: "u123", role: "user" }
-    ],
-    events: [],
-    schools: [],
-    venues: []
-  };
-  localStorage.setItem('srn_db', JSON.stringify(db));
-} else {
-  var db = JSON.parse(localStorage.getItem('srn_db'));
-}
-// 1. ฟังก์ชันดึงข้อมูลล่าสุดจาก Google Sheets (ดึงทุกครั้งที่เปิดหน้าหรือโหลดใหม่)
-async function loadDataFromCloud() {
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=getData`);
-    const result = await response.json();
-    if (result.status === "success" && result.data[storeKey]) {
-      // นำข้อมูลที่ได้จาก Cloud ไปใส่ในตัวแปรหลักของระบบคุณ
-      // ตัวอย่างเช่น:
-      // systemData = result.data[storeKey];
-      console.log("โหลดข้อมูลจาก Google Sheets สำเร็จ", result.data[storeKey]);
-      return result.data[storeKey];
-    }
-  } catch (error) {
-    console.error("ไม่สามารถดึงข้อมูลจาก Cloud ได้:", error);
-    alert("เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูลปัจจุบัน");
-  }
-}
-
-// 2. ฟังก์ชันบันทึกข้อมูลกลับไปยัง Google Sheets
-async function saveDataToCloud(updatedData) {
-  try {
-    const response = await fetch(SCRIPT_URL, {
-      method: "POST",
-      redirect: "follow", // จำเป็นสำหรับ Google Apps Script Web App
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8"
-      },
-      body: JSON.stringify({
-        action: "saveData",
-        key: storeKey,
-        value: updatedData
-      })
-    });
-    
-    const result = await response.json();
-    if (result.status === "success") {
-      console.log("บันทึกข้อมูลลง Google Sheets เรียบร้อย");
-    } else {
-      alert("บันทึกไม่สำเร็จ: " + result.message);
-    }
-  } catch (error) {
-    console.error("เกิดข้อผิดพลาดในการบันทึกข้อมูล:", error);
-    alert("ไม่สามารถเชื่อมต่ออินเทอร์เน็ตเพื่อบันทึกข้อมูลได้");
-  }
-}
-function doGet(e) {
-  // เช็คว่า e หรือ e.parameter มีตัวตนอยู่จริงไหม (ถ้าไม่มีให้แจ้งเตือนกลับไป)
-  if (!e || !e.parameter) {
-    return ContentService.createTextOutput(JSON.stringify({ 
-      status: "error", 
-      message: "ไม่สามารถเรียกใช้งานฟังก์ชันนี้โดยตรงจาก Apps Script ได้ กรุณาเชื่อมต่อผ่าน Web App หรือใส่ Parameter บังคับ" 
-    })).setMimeType(ContentService.MimeType.JSON);
-  }
-
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Database");
-  // ... โค้ดเดิมของคุณ ...
-}
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let db = db = seed();
+let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
@@ -1020,7 +911,7 @@ function openReport() {
 function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-    const dataStr = fetch(https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec);
+    const dataStr = localStorage.getItem(storeKey);
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1117,91 +1008,39 @@ init();
 // ===================================================
 // ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
 // ===================================================
-document.addEventListener('DOMContentLoaded', () => {
-  const loginForm = document.getElementById('mainLoginForm');
-  const loginOverlay = document.getElementById('loginOverlay');
-  const loginError = document.getElementById('loginError');
+document.addEventListener("DOMContentLoaded", () => {
+  const loginOverlay = document.getElementById("loginOverlay");
+  const loginForm = document.getElementById("mainLoginForm");
+  const loginError = document.getElementById("loginError");
 
-  // ตรวจสอบเหตุการณ์เมื่อกดปุ่มเข้าสู่ระบบ
-  if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault(); // 🌟 จุดสำคัญ: ป้องกันหน้าเว็บรีเฟรชตัวเอง
-
-      const usernameInput = document.getElementById('loginUser').value.trim();
-      const passwordInput = document.getElementById('loginPassword').value;
-
-      // 🔍 ค้นหาผู้ใช้งานจาก db.users โดยตรง (ยกเลิกฟังก์ชัน makeuser เดิม)
-      const validUser = db.users.find(user => user.username === usernameInput && user.password === passwordInput);
-
-      if (validUser) {
-        // กรณี: ชื่อผู้ใช้และรหัสผ่านถูกต้อง
-        loginError.style.display = 'none';
-        loginOverlay.style.display = 'none'; // 🔓 ซ่อนหน้าล็อกอินเพื่อเข้าสู่หน้าทำงานหลัก
-        
-        // เก็บสถานะเซสชันผู้ใช้ปัจจุบัน
-        sessionStorage.setItem('activeUser', JSON.stringify(validUser));
-        
-        // เรียกฟังก์ชันปรับแต่งหน้าจอตามสิทธิ์ (Admin หรือ User)
-        applyUserRolePermissions(validUser.role);
-      } else {
-        // กรณี: ข้อมูลไม่ถูกต้อง แสดงข้อความแจ้งเตือน ❌
-        loginError.style.display = 'block';
-      }
-    });
+  // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
+  function getAllUsers() {
+    // 1. ลองดึงจาก localStorage ของระบบก่อน
+    const stored = localStorage.getItem(storeKey);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.users && parsed.users.length > 0) {
+          return parsed.users;
+        }
+      } catch (e) { console.error(e); }
+    }
+    // 2. ถ้าไม่มีใน localStorage ให้เรียกจากฟังก์ชันสร้างผู้ใช้เริ่มต้นใน data.js
+    if (typeof makeUsers === "function") {
+      return makeUsers();
+    }
+    return [];
   }
-  
-  // ตรวจสอบสิทธิ์กรณีที่เคยล็อกอินค้างไว้แล้ว
-  const savedUser = sessionStorage.getItem('activeUser');
-  if (savedUser) {
-    const user = JSON.parse(savedUser);
-    loginOverlay.style.display = 'none';
-    applyUserRolePermissions(user.role);
-  }
-});
-
-// ฟังก์ชันเปิด-ปิดสิทธิ์การมองเห็นปุ่มตาม Role (Admin / User)
-function applyUserRolePermissions(role) {
-  const adminElements = document.querySelectorAll('.admin-only');
-  const roleBadge = document.getElementById('roleBadge');
-  
-  if (role === 'admin') {
-    adminElements.forEach(el => el.style.display = ''); // แสดงส่วนของแอดมิน
-    if (roleBadge) roleBadge.textContent = 'Admin พร้อมใช้งาน';
-  } else {
-    adminElements.forEach(el => el.style.display = 'none'); // ซ่อนส่วนของแอดมินสำหรับ User ทั่วไป
-    if (roleBadge) roleBadge.textContent = 'User (สิทธิ์ลงทะเบียน)';
-  }
-}
-
-// ระบบออกจากระบบ (Logout)
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem('activeUser');
-    window.location.reload(); // รีโหลดหน้ากลับมาล็อกอินใหม่
-  });
-}
 
   // จัดการการกดยืนยันฟอร์ม Login
-const loginForm = document.getElementById("mainLoginForm"); // เช็ค ID ให้ตรงกับ index.html
-if (loginForm) {
-  loginForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const uInput = document.getElementById("username").value;
-    const pInput = document.getElementById("password").value;
+  if (loginForm) {
+    loginForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      
+      const usernameInput = document.getElementById("loginUser").value.trim();
+      const passwordInput = document.getElementById("loginPassword").value;
+      const appUsers = getAllUsers();
 
-    const foundUser = db.users.find(u => u.username === uInput && u.password === pInput);
-    if (foundUser) {
-      sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
-      currentRole = foundUser.role; // กำหนด Role ให้ระบบนำไป Render
-      document.getElementById("loginOverlay").style.display = "none";
-      render(); // สั่งรีเฟรชหน้าทำงาน
-      alert(`ยินดีต้อนรับ: ${foundUser.username}`);
-    } else {
-      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!");
-    }
-  });
-}
       // ค้นหาบัญชีที่ข้อมูลตรงกัน
       const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
       
@@ -1266,12 +1105,7 @@ if (currentSessionUser && loginOverlay) {
     }
   }, 100);
 }
-const loginBtn = document.getElementById("loginBtn"); // หรือชื่อ id ของปุ่ม login ในหน้าเว็บ
-if (loginBtn) {
-  loginBtn.addEventListener("click", () => {
-    // โค้ดตรวจสอบ username / password และสั่งให้ loginOverlay.style.display = "none";
-  });
-}
+
 function renderNav() {
   const roleSelect = document.getElementById("roleSelect");
   const role = roleSelect ? roleSelect.value : "user";
