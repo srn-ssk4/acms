@@ -1,31 +1,3 @@
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSO4kLYaDaV2plxAFf8DQ2FmeNDnA7bB6tSs6V8C-Y2F5NKm5YJMoRpYf48gC5RaKFhw/exec";
-
-// ฟังก์ชันส่งข้อมูลไปบันทึกบน Google Sheet
-async function saveDataToGoogleSheet(sheetName, action, dataPayload) {
-  try {
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      mode: "cors", // สำคัญมากสำหรับการยิงข้ามโดเมน
-      headers: {
-        "Content-Type": "text/plain" // หลีกเลี่ยงปัญหา CORS preflight ใน Apps Script
-      },
-      body: JSON.stringify({
-        sheetName: sheetName,
-        action: action,
-        data: dataPayload
-      })
-    });
-    
-    const result = await response.json();
-    if (result.status === "success") {
-      console.log(`บันทึกข้อมูลลง Sheet ${sheetName} สำเร็จ`);
-    } else {
-      console.error("เกิดข้อผิดพลาดจากฝั่ง Sheet:", result.message);
-    }
-  } catch (error) {
-    console.error("ไม่สามารถเชื่อมต่อกับ Google Sheet ได้:", error);
-  }
-}
 // ==========================================
 // 1. CONSTANTS & INITIAL DATA SEEDS
 // ==========================================
@@ -93,11 +65,11 @@ function medalFromScore(score) {
   if (score >= 60) return "เหรียญทองแดง";
   return "เข้าร่วมการแข่งขัน";
 }
-//function makeUsers() {
- // const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
-//  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
-//  return admins.concat(users);
-//} 
+function makeUsers() {
+  const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
+  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
+  return admins.concat(users);
+}
 function seed() {
   return {
     theme:"default",
@@ -641,15 +613,7 @@ if ($("resultForm")) {
     // อัปเดตลง Array และ Save ลง LocalStorage
     save();
     render();
-   // 2. โค้ดที่เพิ่มเข้าไป: บันทึกแบบเรียลไทม์ลง Google Sheet
-   saveDataToGoogleSheet("results", "update", {
-       id: resultId,
-       score: newScore,
-       medal: medal,
-	   rank: rank
-       // ใส่ข้อมูลอื่นๆ ที่ต้องการอัปเดตในแถวนั้น
-   });
-}
+    
     // รีเซ็ตฟอร์มให้กลับเป็นค่าว่าง
     e.target.reset();
     $("resultRegId").value = ""; 
@@ -938,7 +902,7 @@ function openReport() {
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwSO4kLYaDaV2plxAFf8DQ2FmeNDnA7bB6tSs6V8C-Y2F5NKm5YJMoRpYf48gC5RaKFhw/exec";
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
 // 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
