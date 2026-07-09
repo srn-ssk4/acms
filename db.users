@@ -1,4 +1,5 @@
 // ตัวอย่างโครงสร้างข้อมูลผู้ใช้ใน db.users
 db.users = [
-  { username: "admin", password: "pop@123", role: "admin", name: "ผู้ดูแลระบบ" }
+  { username: "admin", password: "pop@123", role: "admin", name: "ผู้ดูแลระบบ" },
+  { username: "user", password: "u123", role: "user", name: "ผู้ใช้งาน" }
 ];

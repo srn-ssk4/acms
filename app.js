@@ -76,7 +76,22 @@ async function startApp() {
   
   setupLogin(); // 👈 เพิ่มฟังก์ชันนี้เข้าไปท้ายสุดเพื่อให้ระบบเริ่มดักจับการ Login
 }
-
+// ตรวจสอบและสร้างฐานข้อมูลจำลองเริ่มต้นใน data.js
+if (!localStorage.getItem('db.user')) {
+  var db = {
+    // กำหนดบัญชีผู้ใช้งานเริ่มต้นไว้ที่นี่แทนการใช้ฟังก์ชันสร้างอัตโนมัติ
+    users: [
+      { id: "1", username: "admin", password: "pop@123", role: "admin" },
+      { id: "2", username: "user", password: "u123", role: "user" }
+    ],
+    events: [],
+    schools: [],
+    venues: []
+  };
+  localStorage.setItem('srn_db', JSON.stringify(db));
+} else {
+  var db = JSON.parse(localStorage.getItem('srn_db'));
+}
 // 1. ฟังก์ชันดึงข้อมูลล่าสุดจาก Google Sheets (ดึงทุกครั้งที่เปิดหน้าหรือโหลดใหม่)
 async function loadDataFromCloud() {
   try {
@@ -1102,29 +1117,70 @@ init();
 // ===================================================
 // ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
 // ===================================================
-document.addEventListener("DOMContentLoaded", () => {
-  const loginOverlay = document.getElementById("loginOverlay");
-  const loginForm = document.getElementById("mainLoginForm");
-  const loginError = document.getElementById("loginError");
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = document.getElementById('mainLoginForm');
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginError = document.getElementById('loginError');
 
-  // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
-  function getAllUsers() {
-    // 1. ลองดึงจาก localStorage ของระบบก่อน
-    const stored = fetch(https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (parsed.users && parsed.users.length > 0) {
-          return parsed.users;
-        }
-      } catch (e) { console.error(e); }
-    }
-    // 2. ถ้าไม่มีใน localStorage ให้เรียกจากฟังก์ชันสร้างผู้ใช้เริ่มต้นใน data.js
-    if (typeof makeUsers === "function") {
-      return makeUsers();
-    }
-    return [];
+  // ตรวจสอบเหตุการณ์เมื่อกดปุ่มเข้าสู่ระบบ
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault(); // 🌟 จุดสำคัญ: ป้องกันหน้าเว็บรีเฟรชตัวเอง
+
+      const usernameInput = document.getElementById('loginUser').value.trim();
+      const passwordInput = document.getElementById('loginPassword').value;
+
+      // 🔍 ค้นหาผู้ใช้งานจาก db.users โดยตรง (ยกเลิกฟังก์ชัน makeuser เดิม)
+      const validUser = db.users.find(user => user.username === usernameInput && user.password === passwordInput);
+
+      if (validUser) {
+        // กรณี: ชื่อผู้ใช้และรหัสผ่านถูกต้อง
+        loginError.style.display = 'none';
+        loginOverlay.style.display = 'none'; // 🔓 ซ่อนหน้าล็อกอินเพื่อเข้าสู่หน้าทำงานหลัก
+        
+        // เก็บสถานะเซสชันผู้ใช้ปัจจุบัน
+        sessionStorage.setItem('activeUser', JSON.stringify(validUser));
+        
+        // เรียกฟังก์ชันปรับแต่งหน้าจอตามสิทธิ์ (Admin หรือ User)
+        applyUserRolePermissions(validUser.role);
+      } else {
+        // กรณี: ข้อมูลไม่ถูกต้อง แสดงข้อความแจ้งเตือน ❌
+        loginError.style.display = 'block';
+      }
+    });
   }
+  
+  // ตรวจสอบสิทธิ์กรณีที่เคยล็อกอินค้างไว้แล้ว
+  const savedUser = sessionStorage.getItem('activeUser');
+  if (savedUser) {
+    const user = JSON.parse(savedUser);
+    loginOverlay.style.display = 'none';
+    applyUserRolePermissions(user.role);
+  }
+});
+
+// ฟังก์ชันเปิด-ปิดสิทธิ์การมองเห็นปุ่มตาม Role (Admin / User)
+function applyUserRolePermissions(role) {
+  const adminElements = document.querySelectorAll('.admin-only');
+  const roleBadge = document.getElementById('roleBadge');
+  
+  if (role === 'admin') {
+    adminElements.forEach(el => el.style.display = ''); // แสดงส่วนของแอดมิน
+    if (roleBadge) roleBadge.textContent = 'Admin พร้อมใช้งาน';
+  } else {
+    adminElements.forEach(el => el.style.display = 'none'); // ซ่อนส่วนของแอดมินสำหรับ User ทั่วไป
+    if (roleBadge) roleBadge.textContent = 'User (สิทธิ์ลงทะเบียน)';
+  }
+}
+
+// ระบบออกจากระบบ (Logout)
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('activeUser');
+    window.location.reload(); // รีโหลดหน้ากลับมาล็อกอินใหม่
+  });
+}
 
   // จัดการการกดยืนยันฟอร์ม Login
 const loginForm = document.getElementById("mainLoginForm"); // เช็ค ID ให้ตรงกับ index.html
