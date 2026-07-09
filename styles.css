@@ -367,46 +367,84 @@ textarea { min-height: 86px; resize: vertical; }
 
 /* ตั้งค่าเมื่อหน้าจอแสดงผลเล็กลง (สมาร์ตโฟนและแท็บเล็ต) */
 @media (max-width: 1050px) {
-  /* เปิดให้แสดงปุ่มเปิดเมนูในหน้าหลัก */
-  #openMenuBtn {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 6px;
-    background: var(--primary);
+  /* ==========================================================================
+     จัดการให้สัดส่วน "พอดีหน้าจอ" ทั้งแนวตั้งและแนวนอน (Responsive & Rotation)
+     ========================================================================== */
+  
+  /* ปรับโครงสร้างหลักให้ยืดหยุ่นตามความกว้างหน้าจอจริง 100% */
+  .app { 
+    grid-template-columns: 1fr; 
+    width: 100%;
+    overflow-x: hidden; /* ป้องกันหน้าจอสั่นหรือเลื่อนไปด้านข้าง */
   }
   
-  /* เปิดให้แสดงปุ่มปิดเมนูใน Sidebar */
-  #closeMenuBtn {
-    display: block !important;
+  main { 
+    padding: 16px; 
+    width: 100%;
+    box-sizing: border-box;
   }
 
-  /* ปรับแต่ง Sidebar ให้ซ่อนอยู่ฝั่งซ้ายของจอ */
-  aside {
-    position: fixed !important;
-    top: 0;
-    left: -290px; /* ดันออกไปนอกจอทางซ้าย */
-    width: 280px;
-    height: 100vh;
-    z-index: 9999;
-    transition: left 0.3s ease-in-out;
-    box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+  /* ส่วนของ Hero Panel และ Grid ต่างๆ ให้ปรับตัวตามขนาดหน้าจอ */
+  .hero { 
+    grid-template-columns: 1fr; 
+    gap: 14px;
+  }
+  .split, .grid.cols-4, .grid.cols-3, .grid.cols-2 { 
+    grid-template-columns: 1fr; 
+    gap: 14px;
+  }
+  .form-grid, .form-grid.two { 
+    grid-template-columns: 1fr; 
+  }
+  .color-grid, .theme-preview { 
+    grid-template-columns: 1fr; 
   }
 
-  /* เมื่อมีการเติมคลาส .active (จากการกดปุ่ม) ให้เลื่อน Sidebar ออกมา */
-  aside.active {
-    left: 0;
+  /* 💡 จุดสำคัญ: จัดการตาราง (Table) ไม่ให้ดันหน้าจอมือถือจนล้นออกข้าง */
+  table { 
+    min-width: 100%; /* เปลี่ยนจาก 760px เป็น 100% เพื่อให้หดตามหน้าจอได้ */
+  }
+  
+  /* บังคับให้ข้อความในตารางตัดบรรทัดให้อัตโนมัติเมื่อจอแคบ */
+  th, td { 
+    white-space: normal; 
+    word-break: break-word; 
+    font-size: 14px; /* ปรับขนาดอักษรลงเล็กน้อยเพื่อให้พอดีจอ */
+    padding: 10px 8px;
   }
 
-  /* ปรับให้เมนูกลับมาเรียงเป็นแนวดิ่งตามปกติในแถบ Sidebar ด้านข้าง */
-  nav {
-    grid-template-columns: 1fr !important;
+  /* ==========================================================================
+     เงื่อนไขพิเศษ: เมื่อผู้ใช้งาน "หมุนหน้าจอมือถือเป็นแนวนอน" (Landscape)
+     ========================================================================== */
+  @media (orientation: landscape) {
+    /* เมื่อแนวนอนมีพื้นที่ด้านข้างมากขึ้น ปรับให้ Grid แสดงผลเป็น 2 คอลัมน์เพื่อความสวยงาม */
+    .grid.cols-4, .grid.cols-2 { 
+      grid-template-columns: repeat(2, minmax(0, 1fr)); 
+    }
+    .form-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .hero {
+      grid-template-columns: 1.2fr 0.8fr; /* ให้การ์ดแผนที่กลับมาอยู่ข้างๆ ได้ในแนวนอน */
+    }
+    .hero-panel {
+      min-height: 200px; /* ลดความสูงแนวตั้งลงเพื่อไม่ให้ต้องเลื่อนจอเยอะ */
+    }
+    /* ปรับแต่งหน้าต่างแก้ไขธีมให้แบ่งฝั่งซ้าย-ขวาเมื่อจอเป็นแนวนอน */
+    .theme-preview {
+      grid-template-columns: 150px 1fr;
+    }
   }
 }
+
+/* สำหรับสมาร์ตโฟนขนาดเล็กมาก */
 @media (max-width: 560px) {
-  main { padding: 14px; }
-  aside { padding: 16px 12px; }
-  nav { grid-template-columns: 1fr; }
-  .hero-panel { min-height: 300px; }
-  .cert { padding: 28px; min-height: 360px; }
-  .sign-row { flex-direction: column; align-items: center; }
+  main { padding: 12px; }
+  .hero-panel { min-height: 220px; }
+  .cert { 
+    padding: 20px; 
+    min-height: auto; 
+    aspect-ratio: auto; /* ปลดล็อกสัดส่วนตายตัวเพื่อให้พอดีหน้าจอมือถือแนวตั้ง */
+  }
+  .sign-row { flex-direction: column; align-items: center; gap: 15px; }
 }
