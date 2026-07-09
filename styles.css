@@ -367,6 +367,42 @@ textarea { min-height: 86px; resize: vertical; }
 
 /* ตั้งค่าเมื่อหน้าจอแสดงผลเล็กลง (สมาร์ตโฟนและแท็บเล็ต) */
 @media (max-width: 1050px) {
+  /* เปิดให้แสดงปุ่มเปิดเมนูในหน้าหลัก */
+  #openMenuBtn {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary);
+  }
+  
+  /* เปิดให้แสดงปุ่มปิดเมนูใน Sidebar */
+  #closeMenuBtn {
+    display: block !important;
+  }
+
+  /* ปรับแต่ง Sidebar ให้ซ่อนอยู่ฝั่งซ้ายของจอ */
+  aside {
+    position: fixed !important;
+    top: 0;
+    left: -290px; /* ดันออกไปนอกจอทางซ้าย */
+    width: 280px;
+    height: 100vh;
+    z-index: 9999;
+    transition: left 0.3s ease-in-out;
+    box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+  }
+
+  /* เมื่อมีการเติมคลาส .active (จากการกดปุ่ม) ให้เลื่อน Sidebar ออกมา */
+  aside.active {
+    left: 0;
+  }
+
+  /* ปรับให้เมนูกลับมาเรียงเป็นแนวดิ่งตามปกติในแถบ Sidebar ด้านข้าง */
+  nav {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 1050px) {
   /* ==========================================================================
      จัดการให้สัดส่วน "พอดีหน้าจอ" ทั้งแนวตั้งและแนวนอน (Responsive & Rotation)
      ========================================================================== */
