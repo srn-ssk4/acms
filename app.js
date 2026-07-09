@@ -104,7 +104,7 @@ const defaultRegistrations = [
 // ==========================================
 // 2. STATE & DATABASE GLOBAL DECLARATIONS
 // ==========================================
-let db = JSON.parse(fetch());
+let db = JSON.parse(fetch(https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec));
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
@@ -972,7 +972,7 @@ function openReport() {
 function backupDatabaseToJson() {
   try {
     // ดึงข้อมูลทั้งหมดจาก LocalStorage โดยใช้ storeKey ของระบบ
-    const dataStr = fetch();
+    const dataStr = fetch(https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec);
     if (!dataStr) {
       alert("ไม่พบข้อมูลในระบบที่สามารถสำรองได้");
       return;
@@ -1077,7 +1077,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
   function getAllUsers() {
     // 1. ลองดึงจาก localStorage ของระบบก่อน
-    const stored = fetch();
+    const stored = fetch(https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec);
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
@@ -1094,14 +1094,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // จัดการการกดยืนยันฟอร์ม Login
-  if (loginForm) {
-    loginForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      
-      const usernameInput = document.getElementById("loginUser").value.trim();
-      const passwordInput = document.getElementById("loginPassword").value;
-      const appUsers = getAllUsers();
+const loginForm = document.getElementById("mainLoginForm"); // เช็ค ID ให้ตรงกับ index.html
+if (loginForm) {
+  loginForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const uInput = document.getElementById("username").value;
+    const pInput = document.getElementById("password").value;
 
+    const foundUser = db.users.find(u => u.username === uInput && u.password === pInput);
+    if (foundUser) {
+      sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
+      currentRole = foundUser.role; // กำหนด Role ให้ระบบนำไป Render
+      document.getElementById("loginOverlay").style.display = "none";
+      render(); // สั่งรีเฟรชหน้าทำงาน
+      alert(`ยินดีต้อนรับ: ${foundUser.username}`);
+    } else {
+      alert("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!");
+    }
+  });
+}
       // ค้นหาบัญชีที่ข้อมูลตรงกัน
       const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
       
