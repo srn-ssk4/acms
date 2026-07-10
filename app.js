@@ -1,13 +1,4 @@
-// ==========================================
-// 1. CONSTANTS & INITIAL DATA SEEDS
-// ==========================================
-const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
-const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
-const navItems = [
-  ["dashboard","▦","แดชบอร์ด"],["rankings","▤","ตารางอันดับ"],["events","☰","รายการแข่งขัน"],["registration","＋","ลงทะเบียนนักเรียน"],
-  ["results","✓","บันทึกผลการแข่งขัน"],["schools","⌂","จัดการโรงเรียน"],["venues","⌖","จัดการสนามแข่งขัน"],["judges","⚖","กรรมการตัดสิน"],
-  ["documents","□","ตรวจเอกสาร"],["reports","◫","รายงาน"],["users","◎","จัดการผู้ใช้งาน"]
-];
+// CONSTANTS DATA SEEDS
 const today = new Date().toISOString().slice(0,10);
 const storeKey = "sriratana-arts-system";
 
@@ -16,42 +7,48 @@ const themeDefaults = {
   royal: { bg:"#f6f3ee", panel:"#fffdf8", text:"#1f2230", line:"#ded3c2", primary:"#6d214f", primary2:"#a13664", accent:"#b8860b", sidebar:"#23182a", heroFrom:"#6d214f", heroTo:"#a13664", radius:8, font:'"Segoe UI", Tahoma, sans-serif' },
   fresh: { bg:"#f3fbf6", panel:"#ffffff", text:"#10231a", line:"#cce2d4", primary:"#227447", primary2:"#3a9d63", accent:"#e0a100", sidebar:"#163826", heroFrom:"#227447", heroTo:"#3a9d63", radius:8, font:'"Segoe UI", Tahoma, sans-serif' }
 };
-
 const themeFields = {
   bg:"themeBg", panel:"themePanelColor", text:"themeText", line:"themeLine", primary:"themePrimary", primary2:"themePrimary2",
   accent:"themeAccent", sidebar:"themeSidebar", heroFrom:"themeHeroFrom", heroTo:"themeHeroTo", radius:"themeRadius", font:"themeFont"
 };
 
+const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
+const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
+const navItems = [
+  ["dashboard","▦","แดชบอร์ด"],["rankings","▤","ตารางอันดับ"],["events","☰","รายการแข่งขัน"],["registration","＋","ลงทะเบียนนักเรียน"],
+  ["results","✓","บันทึกผลการแข่งขัน"],["schools","⌂","จัดการโรงเรียน"],["venues","⌖","จัดการสนามแข่งขัน"],["judges","⚖","กรรมการตัดสิน"],
+  ["documents","□","ตรวจเอกสาร"],["reports","◫","รายงาน"],["users","◎","จัดการผู้ใช้งาน"]
+];
 const defaultSchools = [
   "บ้านศรีแก้ว","บ้านหนองสังข์","บ้านพิวพวย(เสียงราษฎร์พัฒนา)","บ้านศิลาทอง","บ้านบกห้วยโนน","บ้านตระกวน","อนุบาลศรีรัตนะ","บ้านตระกาจ",
   "บ้านตาแบน","โชติพันธุ์วิทยาสามัคคี","บ้านหนองรุง","บ้านโนนแก","บ้านปุน","บ้านขนาด","บ้านหนองบัวทอง","บ้านทุ่งสว่าง","บ้านจอก(ประชาสามัคคี)",
   "บ้านสะพุง","บ้านหนองปิงโปง","บ้านจานบัว","บ้านเสื่องข้าว","บ้นกระหวัน","บ้านตูม(นพค.15 กรป.กลางอุปถัมภ์)","บ้านหนองใหญ่-ตาไทย","บ้านสลับ","บ้านตายู(อสพป.32)"
-].map((name, i) => ({ id: "s"+(i+1), name, director: "ผอ."+["ก้อ"][i%5]+"ใจดี", phone: "08"+String(12000000+i*137).slice(0,8), medals: { gold: (i*3)%9, silver: (i*5)%7, bronze: (i*2)%8, joined: 6+(i%9) }}));
+].map((name, i) => ({ id: "s"+(i+1), name, director: "ผอ."+[""][i%5]+"", phone: "00"+String(12000000+i*137).slice(0,8), medals: { gold: (i*3)%9, silver: (i*5)%7, bronze: (i*2)%8, joined: 6+(i%9) }}));
 
-const defaultVenues = [
-  { id:"v1", name:"หอประชุมศรีรัตนะ", host:"โรงเรียนบ้านศรีรัตนะ", contact:"ครูสุภาวดี 081-234-5678" },
-];
-
-const defaultEvents = [
-  ["คัดลายมือสื่อภาษาไทย","ภาษาไทย","ป.1-3","เดี่ยว",1,today,"v1"],
-].map((e,i)=>({ id:"e"+(i+1), name:e[0], subject:e[1], level:e[2], type:e[3], members:e[4], date:e[5], venueId:e[6], teachers: teacherCount(e[4]) }));
-
-const defaultRegistrations = [
-  { id:"r1", eventId:"e1", schoolId:"s1", students:"ด.ญ.ใจดี", teacher:"ครูรัตน์", phone:"0811111111", photo:"แนบแล้ว", cert:"แนบแล้ว", status:"รอตรวจ", score:null, medal:null },
-];
-
-// ==========================================
-// 2. STATE & DATABASE GLOBAL DECLARATIONS
-// ==========================================
+const defaultVenues = [].map((v,i)=>({ id:"v"+(i+1), name:v[0], host:v[1], contact:v[2] }));
+const defaultEvents = [  ].map((e,i)=>({ id:"e"+(i+1), name:e[0], subject:e[1], level:e[2], type:e[3], members:e[4], date:e[5], venueId:e[6], teachers: teacherCount(e[4]) }));
+const defaultRegistrations = [].map((r,i)=>({ id:"r"+(i+1), eventId:r[0], schoolId:r[1], students:r[2], teacher:r[3], phone:r[4], photo:r[5], cert:r[6], status:r[7] }));
+const defaultJudges = [].map((j,i)=>({ id:"j"+(i+1), eventId:j[0], name:j[1], role:j[2], rank:j[3], phone:j[4] }));
+// STATE GLOBAL DECLARATIONS
 let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
 let certSignUrl = "";
 let certBgUrl = ""; // เพิ่มตัวแปรเก็บไฟล์ภาพพื้นหลังต้นฉบับ
-// ==========================================
-// 3. UTILITY FUNCTIONS
-// ==========================================
+
+function makeUsers() {
+  const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
+  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
+  return admins.concat(users);
+}
+const $ = id => document.getElementById(id);
+const byId = (list, id) => list.find(x => x.id === id) || {};
+const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
+const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
+const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
+const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
+
 function teacherCount(members) {
   const n = Number(members || 1);
   if (n === 1) return 1;
@@ -65,11 +62,7 @@ function medalFromScore(score) {
   if (score >= 60) return "เหรียญทองแดง";
   return "เข้าร่วมการแข่งขัน";
 }
-function makeUsers() {
-  const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
-  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
-  return admins.concat(users);
-}
+
 function seed() {
   return {
     theme:"default",
@@ -78,21 +71,11 @@ function seed() {
     venues: defaultVenues,
     events: defaultEvents,
     registrations: defaultRegistrations,
-    judges: [
-      { id:"j1", eventId:"e1", name:"ครูสุ", role:"ครู/บุคลากร", rank:"ครูชำนาญการ", phone:"0851111111" },
-    ],
+    judges: defaultJudges,
     users: makeUsers(),
-    certNo: 360
+    certNo: 500
   };
 }
-
-const $ = id => document.getElementById(id);
-const byId = (list, id) => list.find(x => x.id === id) || {};
-const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
-const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
-const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
-const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
-
 // ==========================================
 // 4. MAIN INITIALIZATION & ROUTING
 // ==========================================
