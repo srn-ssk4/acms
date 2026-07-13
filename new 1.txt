@@ -1,0 +1,30 @@
+function makeUsers() {
+  const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
+  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
+  return admins.concat(users);
+}
+
+function renderUsers() {
+  const counts = db.users.reduce((a,u) => (a[u.role]++, a), {admin:0,user:0});
+  $("usersTable").innerHTML = table([`ผู้ใช้งาน (${counts.admin} Admin / ${counts.user} User)`,"สิทธิ์","สถานะรหัสผ่าน","ดำเนินการ"], db.users.map(u => [
+    u.username, u.role === "admin" ? "Admin" : "User", u.changed ? "เปลี่ยนรหัสแล้ว" : "ใช้รหัสตั้งต้น",
+    currentRole === "admin" ? 
+      rowActions("editUser", u.id) + 
+      rowActions("deleteUser", u.id, true) + 
+      `<button class="secondary" data-action="resetPassword" data-id="${u.id}">Reset password</button>` 
+      : `<span class="badge">อ่านอย่างเดียว</span>`
+  ]));
+}
+
+function seed() {
+  return {
+    theme:"default",
+    themeSettings:null,
+    schools: defaultSchools,
+    venues: defaultVenues,
+    events: defaultEvents,
+    registrations: defaultRegistrations,
+    judges: defaultJudges,
+    users: makeUsers(),
+    certNo: 500
+  };
