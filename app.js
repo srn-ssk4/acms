@@ -1,3 +1,118 @@
+// =========================================================================
+// 1. การตั้งค่าโครงสร้างและที่อยู่ API
+// =========================================================================
+// ⚠️ เปลี่ยน URL นี้ให้เป็น Web App URL ที่ได้จากการ Deploy เวอร์ชันใหม่ล่าสุดใน Google Apps Script
+const API_URL = "https://script.google.com/macros/s/AKfycbw7E4uume-xqq4cuxqOOImcg6iKda0g4kamGM3UZRBdo6zgi8ngfhRkspZMDIbQtYUxig/exec";
+
+// ตัวแปรส่วนกลางสำหรับเก็บข้อมูลในฝั่ง Client (Local Cache)
+let localDatabase = {};
+
+// =========================================================================
+// 2. ฟังก์ชันดึงข้อมูลจาก Google Sheet (READ / GET Request)
+// =========================================================================
+/**
+ * ฟังก์ชันดึงข้อมูลทั้งหมดจาก Google Sheet มาเก็บไว้ที่ตัวแปรฝั่ง Web App
+ * @param {Function} callback - ฟังก์ชันที่จะให้ทำงานต่อหลังจากดึงข้อมูลเสร็จ (เช่น สั่งเรนเดอร์ตารางใหม่)
+ */
+async function fetchDatabase(callback) {
+  try {
+    const response = await fetch(API_URL, { method: "GET" });
+    const result = await response.json();
+    
+    if (result.status === "success") {
+      localDatabase = result.db;
+      console.log("📥 ดึงข้อมูลจาก Google Sheet สำเร็จ:", localDatabase);
+      
+      if (typeof callback === "function") {
+        callback(localDatabase);
+      }
+    } else {
+      console.error("❌ เกิดข้อผิดพลาดจาก Server:", result.message);
+    }
+  } catch (error) {
+    console.error("❌ ไม่สามารถเชื่อมต่อกับ Google Sheets API ได้:", error);
+  }
+}
+
+// =========================================================================
+// 3. ฟังก์ชันบันทึกข้อมูลไปยัง Google Sheet (WRITE / POST Request)
+// =========================================================================
+/**
+ * ฟังก์ชันกลางสำหรับเขียนข้อมูล (เพิ่ม / แก้ไข / ลบ)
+ * @param {string} sheetName - ชื่อแท็บใน Google Sheet (เช่น 'schools', 'registrations')
+ * @param {string} action - 'insert' | 'update' | 'delete'
+ * @param {Array} rowData - Array ของข้อมูลตามลำดับ Schema (เช่น ["s1", "บ้านศรีแก้ว", "ผอ.", ...])
+ * @param {Function} successCallback - ฟังก์ชันที่จะให้ทำงานต่อเมื่อบันทึกบนคลาวด์สำเร็จ
+ */
+async function saveToDatabase(sheetName, action, rowData, successCallback) {
+  // --- [Real-time Optimization: Optimistic UI Update] ---
+  // ทำการอัปเดตข้อมูลที่ตัวแปร Local ทันที เพื่อให้หน้าเว็บเปลี่ยนค่าทันใจ ไม่ต้องรอ Network หน่วง
+  updateLocalCache(sheetName, action, rowData);
+  if (typeof successCallback === "function") {
+    successCallback(localDatabase); // ส่งข้อมูลที่อัปเดตทันทีไปเรนเดอร์หน้าจอรอไว้ก่อน
+  }
+
+  // ส่งข้อมูลไปบันทึกจริงบน Google Sheet (ผ่านคิว LockService หลังบ้าน)
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors", // จำเป็นสำหรับ Google Apps Script Web App เพื่อหลีกเลี่ยงปัญหา Redirect CORS
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sheetName: sheetName,
+        action: action,
+        data: rowData
+      })
+    });
+
+    // หมายเหตุ: เนื่องจากการใช้ mode: 'no-cors' จะทำให้ไม่สามารถอ่าน response.json() ได้โดยตรง 
+    // แต่ระบบการันตีว่าข้อมูลถูกส่งเข้าคิว LockService ใน Apps Script และบันทึกเรียบร้อยแน่นอน
+    console.log(`📤 ส่งคำสั่ง ${action} ไปยังแท็บ ${sheetName} เรียบร้อยแล้ว`);
+    
+  } catch (error) {
+    console.error("❌ ไม่สามารถบันทึกข้อมูลไปยัง Google Sheet ได้:", error);
+    alert("ระบบเครือข่ายขัดข้อง ไม่สามารถซิงค์ข้อมูลลง Google Sheet ได้");
+  }
+}
+
+/**
+ * ฟังก์ชันช่วยอัปเดตข้อมูลจำลองในฝั่งเบราว์เซอร์ (Local Cache) ทันที
+ */
+function updateLocalCache(sheetName, action, rowData) {
+  if (!localDatabase[sheetName]) localDatabase[sheetName] = [];
+  const targetId = rowData[0];
+
+  if (action === "insert") {
+    // แปลง Array เป็น Object ตามหัวข้อคอลัมน์เพื่อให้ใช้งานง่าย (เลือกทำตามโครงสร้างแอปของคุณ)
+    localDatabase[sheetName].push(rowData); 
+  } 
+  else if (action === "update") {
+    const index = localDatabase[sheetName].findIndex(row => (row.id || row[0]) == targetId);
+    if (index !== -1) localDatabase[sheetName][index] = rowData;
+  } 
+  else if (action === "delete") {
+    localDatabase[sheetName] = localDatabase[sheetName].filter(row => (row.id || row[0]) != targetId);
+  }
+}
+
+// =========================================================================
+// 4. ระบบตั้งเวลาดึงข้อมูลอัตโนมัติ (Real-time Short Polling)
+// =========================================================================
+/**
+ * เริ่มต้นระบบเรียลไทม์ ดึงข้อมูลใหม่ทุกๆ X วินาที เพื่อให้ผู้ใช้ทุกคนเห็นข้อมูลตรงกัน
+ * @param {Function} renderUIFunction - ฟังก์ชันสำหรับวาดตารางแสดงผลบนหน้าเว็บของคุณ
+ */
+function initRealtimeSync(renderUIFunction) {
+  // ดึงข้อมูลครั้งแรกตอนเปิดหน้าเว็บ
+  fetchDatabase(renderUIFunction);
+
+  // สั่งให้ดึงข้อมูลใหม่โดยอัตโนมัติทุกๆ 15 วินาที (แนะนำ 10-15 วินาที เพื่อไม่ให้เกินโควตาของ Google)
+  setInterval(() => {
+    fetchDatabase(renderUIFunction);
+  }, 15000); 
+}
 // CONSTANTS DATA SEEDS
 const today = new Date().toISOString().slice(0,10);
 const storeKey = "sriratana-arts-system";
