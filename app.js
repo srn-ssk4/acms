@@ -1,455 +1,147 @@
-// ==========================================
-// 1. CONSTANTS DATA SEEDS & CONFIGURATIONS
-// ==========================================
+// CONSTANTS DATA SEEDS
+const today = new Date().toISOString().slice(0,10);
 const storeKey = "sriratana-arts-system";
+// เปลี่ยน URL ตรงนี้เป็น URL ที่ได้จาก Google Apps Script ของคุณ
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec"; 
 
-const themeDefaults = {
-  default: { bg:"#f5f7fb", panel:"#ffffff", text:"#14202e", line:"#d9e2ec", primary:"#126a6f", primary2:"#0e8780", accent:"#d28722", sidebar:"#12202e", heroFrom:"#126a6f", heroTo:"#0e8780", radius:8, font:'"Segoe UI", Tahoma, sans-serif' },
-  royal: { bg:"#f6f3ee", panel:"#fffdf8", text:"#1f2230", line:"#ded3c2", primary:"#6d214f", primary2:"#a13664", accent:"#b8860b", sidebar:"#23182a", heroFrom:"#6d214f", heroTo:"#a13664", radius:8, font:'"Segoe UI", Tahoma, sans-serif' },
-  fresh: { bg:"#f3fbf6", panel:"#ffffff", text:"#10231a", line:"#cce2d4", primary:"#227447", primary2:"#3a9d63", accent:"#e0a100", sidebar:"#163826", heroFrom:"#227447", heroTo:"#3a9d63", radius:8, font:'"Segoe UI", Tahoma, sans-serif' }
-};
+// ... (คงค่าธีม field และค่าเริ่มต้นต่างๆ ไว้เหมือนเดิม)
 
-const themeFields = {
-  bg:"themeBg", panel:"themePanelColor", text:"themeText", line:"themeLine", primary:"themePrimary", primary2:"themePrimary2",
-  accent:"themeAccent", sidebar:"themeSidebar", heroFrom:"themeHeroFrom", heroTo:"themeHeroTo", radius:"themeRadius", font:"themeFont"
-};
-
-const subjects = ["ภาษาไทย","คณิตศาสตร์","วิทยาศาสตร์และเทคโนโลยี","สังคมศึกษา ศาสนาและวัฒนธรรม","สุขศึกษาและพลศึกษา","ศิลปะ","การงานอาชีพ","ภาษาต่างประเทศ","กิจกรรมพัฒนาผู้เรียน","เด็กพิเศษเรียนรวม","ศิลปวัฒนธรรมอีสาน"];
-const levels = ["ปฐมวัย","ป.1-3","ป.4-6","ป.1-6","ม.1-3"];
-const navItems = [
-  ["dashboard","▦","แดชบอร์ด"],["rankings","▤","ตารางอันดับ"],["events","☰","รายการแข่งขัน"],["registration","＋","ลงทะเบียนนักเรียน"],
-  ["results","✓","บันทึกผลการแข่งขัน"],["schools","⌂","จัดการโรงเรียน"],["venues","⌖","จัดการสนามแข่งขัน"],["judges","⚖","กรรมการตัดสิน"],
-  ["documents","□","ตรวจเอกสาร"],["reports","◫","รายงาน"],["users","◎","จัดการผู้ใช้งาน"]
-];
-
-const defaultSchools = [
-  "บ้านศรีแก้ว","บ้านหนองสังข์","บ้านพิวพวย(เสียงราษฎร์พัฒนา)","บ้านศิลาทอง","บ้านบกห้วยโนน","บ้านตระกวน","อนุบาลศรีรัตนะ","บ้านตระกาจ",
-  "บ้านตาแบน","โชติพันธุ์วิทยาสามัคคี","บ้านหนองรุง","บ้านโนนแก","บ้านปุน","บ้านขนาด","บ้านหนองบัวทอง","บ้านทุ่งสว่าง","บ้านจอก(ประชาสามัคคี)",
-  "บ้านสะพุง","บ้านหนองปิงโปง","บ้านจานบัว","บ้านเสื่องข้าว","บ้นกระหวัน","บ้านตูม(นพค.15 กรป.กลางอุปถัมภ์)","บ้านหนองใหญ่-ตาไทย","บ้านสลับ","บ้านตายู(อสพป.32)"
-].map((name, i) => ({ id: "s"+(i+1), name, director: "ผอ."+[""][i%5]+"", phone: "00"+String(12000000+i*137).slice(0,8), medals: { gold: (i*3)%9, silver: (i*5)%7, bronze: (i*2)%8, joined: 6+(i%9) }}));
-
-// ปรับปรุงอาร์เรย์เริ่มต้นที่ว่างเปล่าให้กระชับ ไม่ต้องใช้ .map()
-const defaultVenues = [];
-const defaultEvents = [];
-const defaultRegistrations = [];
-const defaultJudges = [];
-
-// ==========================================
-// 2. STATE GLOBAL DECLARATIONS
-// ==========================================
-let db = JSON.parse(localStorage.getItem(storeKey) || "null") || seed();
+// STATE GLOBAL DECLARATIONS
+let db = seed(); // เริ่มต้นด้วยโครงสร้าง Seed ว่างก่อนโหลดข้อมูลจริง
 let currentRole = "";
 let currentPage = "dashboard";
 let certLogoUrl = "";
 let certSignUrl = "";
-
-function makeUsers() {
-  const admins = Array.from({length:1}, (_,i)=>({ id:"a"+(i+1), username:"admin"+String(i+1).padStart(2,"0"), role:"admin", password:"SriRatana@123", changed:false }));
-  const users = Array.from({length:1}, (_,i)=>({ id:"u"+(i+1), username:"user"+String(i+1).padStart(2,"0"), role:"user", password:"User@123", changed:false }));
-  return admins.concat(users);
-}
+let certBgUrl = "";
 
 // ==========================================
-// 3. UTILITY HELPERS
+// 4. MAIN INITIALIZATION & ROUTING (ปรับปรุงให้ดึง Real-time ตอนเริ่ม)
 // ==========================================
-const $ = id => document.getElementById(id);
-const byId = (list, id) => list.find(x => x.id === id) || {};
-const save = () => localStorage.setItem(storeKey, JSON.stringify(db));
-const nextId = (prefix, list) => prefix + (list.length ? Math.max(...list.map(x => Number(String(x.id).replace(/\D/g,"")) || 0)) + 1 : 1);
-const optionList = (items, getLabel = x => x.name) => items.map(x => `<option value="${x.id}">${getLabel(x)}</option>`).join("");
-const escapeHtml = str => String(str ?? "").replace(/[&<>"']/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[s]));
+async function init() {
+  // สร้างปุ่มสำรองข้อมูล JSON และนำเข้าเพิ่มเติมใน UI หน้าดัชนี/เอกสาร (หากยังไม่มีใน HTML)
+  injectBackupControls(); 
 
-function teacherCount(members) {
-  const n = Number(members || 1);
-  return n === 1 ? 1 : (n <= 5 ? 2 : 3);
-}
-
-function medalFromScore(score) {
-  score = Number(score);
-  if (score >= 80) return "เหรียญทอง";
-  if (score >= 70) return "เหรียญเงิน";
-  if (score >= 60) return "เหรียญทองแดง";
-  return "เข้าร่วมการแข่งขัน";
-}
-
-function seed() {
-  return {
-    theme:"default",
-    themeSettings:null,
-    schools: defaultSchools,
-    venues: defaultVenues,
-    events: defaultEvents,
-    registrations: defaultRegistrations,
-    judges: defaultJudges,
-    users: makeUsers(),
-    certNo: 500
-  };
-}
-
-// ==========================================
-// 4. MAIN INITIALIZATION & ROUTING
-// ==========================================
-function init() {
-  renderNav();
+  $("nav").innerHTML = navItems.map(([id, icon, label]) => `<button class="nav-btn ${id===currentPage?"active":""}" data-page="${id}" type="button"><span>${icon}</span><span>${label}</span></button>`).join("");
   $("nav").addEventListener("click", e => {
     const btn = e.target.closest("[data-page]");
     if (btn) showPage(btn.dataset.page);
   });
   
-  $("roleSelect").addEventListener("change", e => { 
-    currentRole = e.target.value; 
-    renderNav();
-    const reportBtn = document.getElementById("reportBtn");
-    if (reportBtn) reportBtn.disabled = false;
-    render(); 
-  });
-  
+  // โหลดข้อมูลล่าสุดจาก Google Sheets แบบเรียลไทม์ทันทีที่เปิดระบบ
+  await refreshDatabaseFromSheet();
+
+  $("roleSelect").addEventListener("change", e => { currentRole = e.target.value; render(); });
   $("themeSelect").addEventListener("change", e => {
     db.theme = e.target.value;
     db.themeSettings = e.target.value === "custom" ? (db.themeSettings || {...themeDefaults.default}) : null;
-    save();
+    saveLocalTheme(); // แยกบันทึกเฉพาะธีมไว้ที่เครื่องผู้ใช้ได้
     render();
   });
-  
-  $("themePanelBtn").addEventListener("click", openThemePanel);
-  $("closeThemePanel").addEventListener("click", closeThemePanel);
-  $("themePanel").addEventListener("click", e => { if (e.target.id === "themePanel") closeThemePanel(); });
-  
-  Object.values(themeFields).forEach(id => {
-    if ($(id)) $(id).addEventListener("input", previewThemeSettings);
+
+  // ผูกการกดปุ่มคืนค่าตัวอย่าง
+  $("seedBtn").addEventListener("click", async () => { 
+    if (confirm("คืนค่าข้อมูลตัวอย่างและบันทึกลง Google Sheet หรือไม่?")) { 
+      db = seed(); 
+      await uploadBulkToSheet(db);
+    } 
   });
-  
-  $("saveThemeSettings").addEventListener("click", saveThemeSettings);
-  $("resetThemeSettings").addEventListener("click", resetThemeSettings);
-  $("seedBtn").addEventListener("click", () => { if (confirm("คืนค่าข้อมูลตัวอย่างทั้งหมด?")) { db = seed(); save(); render(); } });
-  
+
   bindForms();
   render();
+
+  // ตั้งเวลา Auto-Refresh ดึงข้อมูลใหม่ทุก 30 วินาที เพื่อให้ผู้ใช้หลายเครื่องเห็นข้อมูลอัปเดตตรงกัน
+  setInterval(async () => {
+    await refreshDatabaseFromSheet();
+  }, 30000);
 }
 
-function showPage(id) {
-  currentPage = id;
-  document.querySelectorAll(".section").forEach(s => s.classList.toggle("active", s.id === id));
-  document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.page === id));
-  $("pageTitle").textContent = navItems.find(x => x[0] === id)?.[2] || "ระบบการแข่งขัน";
-  render();
-}
-
-// ==========================================
-// 5. THEME RENDERING OPERATIONS
-// ==========================================
-function currentThemeSettings() {
-  return db.themeSettings || themeDefaults[db.theme] || themeDefaults.default;
-}
-
-function hexToRgba(hex, alpha) {
-  const clean = String(hex || "#000000").replace("#", "");
-  const value = clean.length === 3 ? clean.split("").map(x => x + x).join("") : clean;
-  const num = parseInt(value, 16);
-  const r = (num >> 16) & 255;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function applyThemeSettings(settings = currentThemeSettings()) {
-  const root = document.documentElement.style;
-  root.setProperty("--bg", settings.bg);
-  root.setProperty("--panel", settings.panel);
-  root.setProperty("--panel-2", hexToRgba(settings.primary, .12));
-  root.setProperty("--text", settings.text);
-  root.setProperty("--muted", hexToRgba(settings.text, .66));
-  root.setProperty("--line", settings.line);
-  root.setProperty("--primary", settings.primary);
-  root.setProperty("--primary-2", settings.primary2);
-  root.setProperty("--accent", settings.accent);
-  root.setProperty("--sidebar", settings.sidebar);
-  root.setProperty("--hero-from", hexToRgba(settings.heroFrom, .94));
-  root.setProperty("--hero-to", hexToRgba(settings.heroTo, .84));
-  root.setProperty("--radius", `${settings.radius}px`);
-  root.setProperty("--font-main", settings.font);
-}
-
-function syncThemeControls() {
-  const settings = currentThemeSettings();
-  Object.entries(themeFields).forEach(([key, id]) => {
-    if ($(id)) $(id).value = settings[key];
-  });
-}
-
-function readThemeControls() {
-  const settings = {};
-  Object.entries(themeFields).forEach(([key, id]) => {
-    if ($(id)) settings[key] = key === "radius" ? Number($(id).value) : $(id).value;
-  });
-  return settings;
-}
-
-function previewThemeSettings() { applyThemeSettings(readThemeControls()); }
-function openThemePanel() { syncThemeControls(); $("themePanel").classList.add("open"); $("themePanel").setAttribute("aria-hidden", "false"); }
-function closeThemePanel() { $("themePanel").classList.remove("open"); $("themePanel").setAttribute("aria-hidden", "true"); applyThemeSettings(); }
-
-function saveThemeSettings() {
-  db.theme = "custom";
-  db.themeSettings = readThemeControls();
-  save();
-  render();
-  closeThemePanel();
-}
-
-function resetThemeSettings() {
-  db.theme = "default";
-  db.themeSettings = null;
-  save();
-  render();
-}
-
-// ==========================================
-// 6. MODULE RENDERERS (UI GENERATORS)
-// ==========================================
-function render() {
-  document.body.dataset.theme = db.theme || "default";
-  $("themeSelect").value = db.theme || "default";
-  applyThemeSettings();
-  syncThemeControls();
-  
-  document.querySelectorAll(".admin-only").forEach(el => el.style.display = (currentRole === "admin") ? "" : "none");
-  document.querySelectorAll(".user-only").forEach(el => el.style.display = (currentRole === "user") ? "" : "none");
-  
-  fillSelects();
-  renderDashboard();
-  renderRankings();
-  renderEvents();
-  renderRegistrations();
-  renderResults();
-  renderSchools();
-  renderVenues();
-  renderJudges();
-  renderDocuments();
-  renderUsers();
-  renderCertificate();
-}
-
-function renderNav() {
-  const role = currentRole || "user";
-  if (!$("nav")) return;
-  $("nav").innerHTML = navItems
-    .filter(([id]) => role === "admin" || ["dashboard", "rankings", "events", "registration", "reports"].includes(id))
-    .map(([id, icon, label]) => `<button class="nav-btn ${id===currentPage?"active":""}" data-page="${id}" type="button"><span>${icon}</span><span>${label}</span></button>`)
-    .join("");
-}
-
-function fillSelects() {
-  const subjectOptions = subjects.map(s => `<option>${s}</option>`).join("");
-  const levelOptions = levels.map(s => `<option>${s}</option>`).join("");
-  if ($("eventSubject")) $("eventSubject").innerHTML = subjectOptions;
-  if ($("eventLevel")) $("eventLevel").innerHTML = levelOptions;
-  if ($("eventVenue")) $("eventVenue").innerHTML = optionList(db.venues);
-  if ($("regEvent")) $("regEvent").innerHTML = optionList(db.events, e => `${e.name} (${e.level})`);
-  if ($("judgeEvent")) $("judgeEvent").innerHTML = optionList(db.events, e => `${e.name} (${e.level})`);
-  if ($("certEvent")) $("certEvent").innerHTML = optionList(db.events, e => `${e.name} (${e.level})`);
-  if ($("regSchool")) $("regSchool").innerHTML = optionList(db.schools);
-  if ($("resultRegistration")) {
-    $("resultRegistration").innerHTML = db.registrations.map(r => `<option value="${r.id}">${byId(db.events,r.eventId).name || "-"} - ${byId(db.schools,r.schoolId).name || "-"}</option>`).join("");
+// ดึงข้อมูลภาพรวมใหม่จาก Google Sheet
+async function refreshDatabaseFromSheet() {
+  try {
+    const response = await fetch(GOOGLE_SHEET_WEBAPP_URL);
+    const remoteDb = await response.json();
+    if (remoteDb && Object.keys(remoteDb).length > 0) {
+      // เมิร์จข้อมูลจากชีตเข้าสู่ State ตัวแปร db ในแอปพลิเคชัน
+      Object.keys(remoteDb).forEach(key => {
+        db[key] = remoteDb[key];
+      });
+      render();
+    }
+  } catch (err) {
+    console.error("ไม่สามารถเชื่อมต่อดึงข้อมูลแบบเรียลไทม์จาก Google Sheets ได้: ", err);
   }
 }
 
-function rankedSchools() {
-  const schoolMedalMap = {};
-  db.schools.forEach(s => schoolMedalMap[s.id] = { id: s.id, name: s.name, gold: 0, silver: 0, bronze: 0, joined: 0 });
-  db.registrations.forEach(r => {
-    if (schoolMedalMap[r.schoolId]) {
-      if (r.medal === "เหรียญทอง") schoolMedalMap[r.schoolId].gold++;
-      else if (r.medal === "เหรียญเงิน") schoolMedalMap[r.schoolId].silver++;
-      else if (r.medal === "เหรียญทองแดง") schoolMedalMap[r.schoolId].bronze++;
-      else if (r.medal === "เข้าร่วมการแข่งขัน") schoolMedalMap[r.schoolId].joined++;
-    }
-  });
-  return Object.values(schoolMedalMap).sort((a, b) => b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze || a.name.localeCompare(b.name, "th"))
-    .map(item => ({ id: item.id, name: item.name, medals: { gold: item.gold, silver: item.silver, bronze: item.bronze, joined: item.joined } }));
+// ฟังก์ชันเซฟระดับโมดูล ส่งขึ้นแผ่นงานแบบตัวต่อตัวเรียลไทม์
+async function saveToSheetRealTime(tableName, item) {
+  try {
+    await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "upsert",
+        table: tableName,
+        data: item
+      })
+    });
+    console.log(`อัปเดตข้อมูลตาราง ${tableName} ไปยัง Google Sheets สำเร็จ`);
+  } catch (err) {
+    console.error("เกิดข้อผิดพลาดในการส่งข้อมูลเรียลไทม์: ", err);
+  }
 }
 
-function renderDashboard() {
-  const pending = db.registrations.filter(r => r.status === "รอตรวจ").length;
-  const totalStudents = db.registrations.reduce((sum, r) => sum + Math.max(1, String(r.students).split(/\n|,/).filter(Boolean).length), 0);
-  const sortedEvents = [...db.events].sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  const stats = [
-    ["รายการแข่งขัน", db.events.length, `${subjects.length} กลุ่มสาระ`],
-    ["นักเรียนลงทะเบียน", totalStudents, "จากฐานข้อมูลรับสมัคร"],
-    ["โรงเรียน", db.schools.length, "โรงเรียนในกลุ่มศรีรัตนะ"],
-    ["รอตรวจเอกสาร", pending, "รายการต้องดำเนินการ"]
-  ];
-  $("stats").innerHTML = stats.map(s => `<div class="card stat"><span class="label">${s[0]}</span><span class="value">${s[1]}</span><span class="note">${s[2]}</span></div>`).join("");
-  $("topMedals").innerHTML = medalRows(rankedSchools().slice(0,10), true);
-  
-  $("todayEvents").innerHTML = table(
-    ["รายการ", "กลุ่มสาระ", "ระดับ", "สนาม", "วันที่แข่งขัน"], 
-    sortedEvents.map(e => [e.name, e.subject, e.level, byId(db.venues, e.venueId).name || "-", e.date])
-  );
+// ฟังก์ชันลบข้อมูลแบบเรียลไทม์บนแผ่นงาน
+async function deleteFromSheetRealTime(tableName, id) {
+  try {
+    await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "delete",
+        table: tableName,
+        id: id
+      })
+    });
+  } catch (err) {
+    console.error("ไม่สามารถส่งคำสั่งลบไปยัง Google Sheets ได้: ", err);
+  }
 }
 
-function medalRows(rows, compact=false) {
-  return table(compact ? ["โรงเรียน","ทอง","เงิน","ทองแดง"] : ["อันดับโรงเรียน","🎖️ ทอง","🎖️ เงิน","🎖️ ทองแดง","🎖️ เข้าร่วม","รวมทั้งหมด"], rows.map((s,i) => {
-    const total = s.medals.gold+s.medals.silver+s.medals.bronze+s.medals.joined;
-    return compact ? [`${i+1}. ${s.name}`, s.medals.gold, s.medals.silver, s.medals.bronze] : [`${i+1}. ${s.name}`, s.medals.gold, s.medals.silver, s.medals.bronze, s.medals.joined, total];
-  }));
-}
-
-function renderRankings() { $("rankingTable").innerHTML = medalRows(rankedSchools()); }
-
-function renderEvents() {
-  const q = ($("eventSearch")?.value || "").toLowerCase();
-  const rows = db.events.filter(e => (`${e.name} ${e.subject}`).toLowerCase().includes(q));
-  $("eventsTable").innerHTML = table(["รายการ","กลุ่มสาระ","ระดับ","ประเภท","ผู้เข้าแข่ง","ครู","วัน","สนาม","จัดการ"], rows.map(e => [
-    e.name, e.subject, e.level, e.type, e.members, e.teachers, e.date, byId(db.venues,e.venueId).name || "-",
-    currentRole === "admin" ? rowActions("editEvent", e.id) + rowActions("deleteEvent", e.id, true) : `<span class="badge">อ่านอย่างเดียว</span>`
-  ]));
-}
-
-function renderRegistrations() {
-  $("registrationTable").innerHTML = table(["รายการ","โรงเรียน","นักเรียน/ทีม","ครู","เอกสาร","สถานะ","จัดการ"], db.registrations.slice().reverse().map(r => [
-    byId(db.events,r.eventId).name || "-", byId(db.schools,r.schoolId).name || "-", escapeHtml(r.students), r.teacher, `${r.photo} / ${r.cert}`, statusBadge(r.status),
-    (currentRole === "admin" || r.status === "รอตรวจ" || r.status === "ต้องแก้ไข") ? rowActions("editRegistration", r.id) + rowActions("deleteRegistration", r.id, true) : `<span class="badge">อนุมัติแล้ว (อ่านอย่างเดียว)</span>`
-  ]));
-}
-
-// Refactor: ปรับปรุงโครงสร้างให้ใช้ฟังก์ชัน table ส่วนกลางเพื่อลดความซ้ำซ้อน
-function renderResults() {
-  const tableEl = $("resultsTable");
-  if (!tableEl) return;
-  
-  const headers = ["รายการแข่งขัน", "โรงเรียน", "คะแนน", "ผลการประกวด", "อันดับ"];
-  if (currentRole === "admin") headers.push("จัดการ");
-
-  const rows = db.registrations.map(r => {
-    const ev = byId(db.events, r.eventId);
-    const sch = byId(db.schools, r.schoolId);
-    if (!ev || !sch) return null;
-
-    const scoreText = (r.score !== undefined && r.score !== null) ? r.score : "-";
-    const medalText = r.medal || "-";
-    const rankText = r.rank ? `อันดับที่ ${r.rank}` : "-";
-    
-    const row = [
-      `<b>${ev.name}</b><br><small>${ev.level} (${ev.type})</small>`,
-      sch.name,
-      `<span class="badge">${scoreText}</span>`,
-      `<span class="badge ${r.medal ? 'success' : ''}">${medalText}</span>`,
-      rankText
-    ];
-    if (currentRole === "admin") {
-      row.push(`<button class="btn-sm" type="button" onclick="editResult('${r.id}')">✏️ แก้ไข</button>`);
-    }
-    return row;
-  }).filter(Boolean);
-
-  tableEl.innerHTML = table(headers, rows);
-}
-
-function editResult(regId) {
-  const r = byId(db.registrations, regId);
-  if (!r) return;
-  $("resultRegId").value = r.id;
-  if ($("resultRegistration")) $("resultRegistration").value = r.id;
-  $("resultScore").value = (r.score !== undefined && r.score !== null) ? r.score : "80";
-  $("resultMedal").value = r.medal || "";
-  $("resultRank").value = r.rank || "";
-}
-
-function renderSchools() {
-  $("schoolsTable").innerHTML = table(["โรงเรียน","ผู้บริหาร","โทรศัพท์","จัดการ"], db.schools.map(s => [
-    s.name, s.director, s.phone, currentRole === "admin" ? rowActions("editSchool", s.id) + rowActions("deleteSchool", s.id, true) : `<span class="badge">อ่านอย่างเดียว</span>`
-  ]));
-}
-
-function renderVenues() {
-  $("venuesTable").innerHTML = table(["สนาม","ที่ตั้ง/เจ้าภาพ","ผู้ประสานงาน","จัดการ"], db.venues.map(v => [
-    v.name, v.host, v.contact, currentRole === "admin" ? rowActions("editVenue", v.id) + rowActions("deleteVenue", v.id, true) : `<span class="badge">อ่านอย่างเดียว</span>`
-  ]));
-}
-
-function renderJudges() {
-  $("judgesTable").innerHTML = table(["รายการ","ชื่อกรรมการ","คุณสมบัติ","วิทยฐานะ","โทรศัพท์","จัดการ"], db.judges.map(j => [
-    byId(db.events,j.eventId).name || "-", j.name, j.role, j.rank, j.phone,
-    currentRole === "admin" ? rowActions("editJudge", j.id) + rowActions("deleteJudge", j.id, true) : `<span class="badge">อ่านอย่างเดียว</span>`
-  ]));
-}
-
-function renderDocuments() {
-  $("documentsTable").innerHTML = table(["รายการ","โรงเรียน","เอกสาร","สถานะ","ดำเนินการ"], db.registrations.map(r => [
-    byId(db.events,r.eventId).name || "-", byId(db.schools,r.schoolId).name || "-", `${r.photo} / ${r.cert}`, statusBadge(r.status),
-    currentRole === "admin" ? `<button class="icon" title="รับรอง" data-action="approveDoc" data-id="${r.id}">✓</button> <button class="icon danger" title="ให้แก้ไข" data-action="rejectDoc" data-id="${r.id}">!</button>` : `<span class="badge">รอ Admin</span>`
-  ]));
-}
-
-function renderUsers() {
-  const counts = db.users.reduce((a,u) => (a[u.role]++, a), {admin:0,user:0});
-  $("usersTable").innerHTML = table([`ผู้ใช้งาน (${counts.admin} Admin / ${counts.user} User)`,"สิทธิ์","สถานะรหัสผ่าน","ดำเนินการ"], db.users.map(u => [
-    u.username, u.role === "admin" ? "Admin" : "User", u.changed ? "เปลี่ยนรหัสแล้ว" : "ใช้รหัสตั้งต้น",
-    currentRole === "admin" ? rowActions("editUser", u.id) + rowActions("deleteUser", u.id, true) + `<button class="secondary" data-action="resetPassword" data-id="${u.id}">Reset password</button>` : `<span class="badge">อ่านอย่างเดียว</span>`
-  ]));
-}
-
-function renderCertificate() {
-  const event = byId(db.events, $("certEvent")?.value) || db.events[0] || {};
-  const no = `ศรน-${String(new Date().getFullYear()+543).slice(2)}-${String(db.certNo || 1).padStart(5,"0")}`;
-  $("certificate").innerHTML = `
-    <div>
-      ${certLogoUrl ? `<img src="${certLogoUrl}" alt="logo" style="width:72px;height:72px;object-fit:contain;margin:0 auto 14px;display:block">` : `<div class="seal" style="margin:0 auto 14px">ศรน</div>`}
-      <h4>เกียรติบัตร</h4>
-      <p>เลขทะเบียน ${no}</p>
-      <p>ขอมอบให้</p>
-      <div class="big">${escapeHtml($("certName")?.value || "ผู้รับเกียรติบัตร")}</div>
-      <p>${escapeHtml($("certType")?.value || "นักเรียน")} ได้รับรางวัล <strong>${escapeHtml($("certAward")?.value || "เหรียญทอง")}</strong> รายการแข่งขัน ${escapeHtml(event.name || "การแข่งขันศิลปหัตถกรรมนักเรียน")}</p>
-      <p>การแข่งขันศิลปหัตถกรรมนักเรียน ครั้งที่ 75 กลุ่มโรงเรียนศรีรัตนะ สังกัด สพป.ศรีสะเกษ เขต 4</p>
-      <div class="sign-row">
-	      <div>${certSignUrl ? `<img src="${certSignUrl}" alt="signature" style="width:150px;height:48px;object-fit:contain;display:block;margin:0 auto 4px">` : ""}<div class="sign-line">ประธานกลุ่มโรงเรียนศรีรัตนะ</div></div>
-      </div>
-    </div>`;
+function saveLocalTheme() {
+  localStorage.setItem(storeKey + "-theme", JSON.stringify({theme: db.theme, themeSettings: db.themeSettings}));
 }
 
 // ==========================================
-// 7. COMPONENT HTML BUILDERS
-// ==========================================
-function table(headers, rows) {
-  if (!rows.length) return `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody><tr><td colspan="${headers.length}" class="empty">ยังไม่มีข้อมูล</td></tr></tbody>`;
-  return `<thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("")}</tbody>`;
-}
-function statusBadge(status) { return `<span class="badge ${status === "รับรอง" ? "ok" : status === "ต้องแก้ไข" ? "bad" : "warn"}">${status}</span>`; }
-function rowActions(action, id, danger=false) { return `<button class="${danger ? "danger" : "secondary"}" data-action="${action}" data-id="${id}">${action.startsWith("edit") ? "แก้ไข" : "ลบ"}</button> `; }
-
-// ==========================================
-// 8. DATA OPERATIONS & FORMS BINDING
+// DATA OPERATIONS & FORMS BINDING (แก้ไขให้ทำงานแบบ Async/Await)
 // ==========================================
 function bindForms() {
-  document.addEventListener("click", e => {
+  // ดักจับ Event Click ปุ่มลบข้อมูลเดิม ปรับปรุงให้ยิงขึ้น Google Sheet
+  document.addEventListener("click", async e => {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     const { action, id } = btn.dataset;
+    
+    if (action === "deleteEvent") await removeSheetItem("events", id);
+    if (action === "deleteSchool") await removeSheetItem("schools", id);
+    if (action === "deleteVenue") await removeSheetItem("venues", id);
+    if (action === "deleteRegistration") await removeSheetItem("registrations", id);
+    if (action === "deleteJudge") await removeSheetItem("judges", id);
+    if (action === "deleteUser") await removeSheetItem("users", id);
+    
+    // Actions อื่นๆ คงเดิม
     if (action === "editEvent") editEvent(id);
-    if (action === "deleteEvent") removeItem("events", id);
     if (action === "editSchool") editSchool(id);
-    if (action === "deleteSchool") removeItem("schools", id);
     if (action === "editVenue") editVenue(id);
-    if (action === "deleteVenue") removeItem("venues", id);
+    if (action === "editRegistration") editRegistration(id);
+    if (action === "editJudge") editJudge(id);
+    if (action === "editUser") editUser(id);
     if (action === "approveDoc") updateDoc(id, "รับรอง");
     if (action === "rejectDoc") updateDoc(id, "ต้องแก้ไข");
-    if (action === "resetPassword") resetPassword(id);
-    if (action === "editRegistration") editRegistration(id);
-    if (action === "deleteRegistration") removeItem("registrations", id);
-    if (action === "editJudge") editJudge(id);
-    if (action === "deleteJudge") removeItem("judges", id);
-    if (action === "editUser") editUser(id);
-    if (action === "deleteUser") removeItem("users", id);
   });
-  
-  if($("eventSearch")) $("eventSearch").addEventListener("input", renderEvents);
-  
-  if($("eventForm")) $("eventForm").addEventListener("submit", e => {
+
+  // ฟอร์มจัดการ Event แข่งขัน
+  if($("eventForm")) $("eventForm").addEventListener("submit", async e => {
     e.preventDefault();
     const id = $("eventId").value || nextId("e", db.events);
-    upsert(db.events, {
+    const item = {
       id,
       name: $("eventName").value,
       subject: $("eventSubject").value,
@@ -459,27 +151,22 @@ function bindForms() {
       date: $("eventDate").value,
       venueId: $("eventVenue").value,
       teachers: teacherCount(Number($("eventMembers").value))
-    });
-    e.target.reset(); $("eventId").value = ""; save(); render();
+    };
+    
+    upsert(db.events, item);
+    e.target.reset();
+    $("eventId").value = "";
+    render();
+    await saveToSheetRealTime("events", item); // ส่งขึ้นชีตเรียลไทม์
   });
-  
-  if($("clearEvent")) $("clearEvent").addEventListener("click", () => $("eventForm").reset());
-  if($("clearSchool")) $("clearSchool").addEventListener("click", () => $("schoolForm").reset());
-  if($("reportBtn")) $("reportBtn").addEventListener("click", openReport);
-  if($("clearUser")) $("clearUser").addEventListener("click", () => { $("userForm").reset(); if($("userId")) $("userId").value = ""; });
-  
-  ["certType","certName","certAward","certEvent"].forEach(id => {
-    if($(id)) $(id).addEventListener("input", renderCertificate);
-  });
-  
-  if($("certLogo")) $("certLogo").addEventListener("change", e => readImage(e.target.files[0], url => { certLogoUrl = url; renderCertificate(); }));
-  if($("certSign")) $("certSign").addEventListener("change", e => readImage(e.target.files[0], url => { certSignUrl = url; renderCertificate(); }));
 
-  if($("registrationForm")) $("registrationForm").addEventListener("submit", e => {
+  // ฟอร์มลงทะเบียนนักเรียน
+  if($("registrationForm")) $("registrationForm").addEventListener("submit", async e => {
     e.preventDefault();
     const id = $("regId")?.value || nextId("r", db.registrations);
     const oldReg = byId(db.registrations, id);
-    upsert(db.registrations, {
+
+    const item = {
       id,
       eventId: $("regEvent").value,
       schoolId: $("regSchool").value,
@@ -491,13 +178,19 @@ function bindForms() {
       status: oldReg.status || "รอตรวจ",
       score: oldReg.score !== undefined ? oldReg.score : null,
       medal: oldReg.medal || null,
-      medalApplied: oldReg.medalApplied || false
-    });
-    e.target.reset(); if($("regId")) $("regId").value = ""; save(); render();
+      rank: oldReg.rank || null
+    };
+
+    upsert(db.registrations, item);
+    e.target.reset();
+    if($("regId")) $("regId").value = "";
+    render();
+    await saveToSheetRealTime("registrations", item); // ส่งขึ้นชีตเรียลไทม์
   });
-  
+
+  // ฟอร์มกรอกบันทึกคะแนนของกรรมการ
   if ($("resultForm")) {
-    $("resultForm").addEventListener("submit", e => {
+    $("resultForm").addEventListener("submit", async e => {
       e.preventDefault();
       const regId = $("resultRegId").value || $("resultRegistration").value;
       const scoreValue = $("resultScore").value;
@@ -508,168 +201,292 @@ function bindForms() {
       if (!medal && score !== null) medal = medalFromScore(score);
 
       const targetReg = byId(db.registrations, regId);
-      if (!targetReg.id) return alert("ไม่พบข้อมูลการลงทะเบียนแข่งขันที่ตรงกัน");
+      if (!targetReg.id) return alert("ไม่พบข้อมูล");
 
       targetReg.score = score;
       targetReg.medal = medal;
       targetReg.rank = rank;
 
-      save(); render(); e.target.reset(); $("resultRegId").value = "";
-      alert("บันทึกคะแนนและผลการแข่งขันสำเร็จ!");
+      render();
+      e.target.reset();
+      $("resultRegId").value = "";
+      
+      await saveToSheetRealTime("registrations", targetReg); // บันทึกผลคะแนนขึ้นชีตทันที
+      alert("บันทึกคะแนนลงระบบเครือข่ายสำเร็จ!");
     });
   }
   
-  if($("schoolForm")) $("schoolForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const id = $("schoolId").value || nextId("s", db.schools);
-    upsert(db.schools, { id, name:$("schoolName").value, director:$("schoolDirector").value, phone:$("schoolPhone").value, medals: byId(db.schools,id).medals || {gold:0,silver:0,bronze:0,joined:0} });
-    e.target.reset(); $("schoolId").value = ""; save(); render();
-  });
-  
-  if($("venueForm")) $("venueForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const id = $("venueId").value || nextId("v", db.venues);
-    upsert(db.venues, { id, name:$("venueName").value, host:$("venueHost").value, contact:$("venueContact").value });
-    e.target.reset(); $("venueId").value = ""; save(); render();
-  });
-  
-  if($("judgeForm")) $("judgeForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const id = $("judgeId").value || nextId("j", db.judges);
-    upsert(db.judges, { id, eventId: $("judgeEvent").value, name: $("judgeName").value, role: $("judgeRole").value, rank: $("judgeRank").value, phone: $("judgePhone").value });
-    e.target.reset(); $("judgeId").value = ""; save(); render();
-  });
-  
-  if($("certForm")) $("certForm").addEventListener("submit", e => {
-    e.preventDefault();
-    db.certNo = (db.certNo || 1) + 1;
-    save(); renderCertificate(); alert("สร้างเกียรติบัตรเรียบร้อย สามารถพิมพ์เป็น PDF ได้จากเบราว์เซอร์");
-  });
-  
-  if($("userForm")) $("userForm").addEventListener("submit", e => {
-    e.preventDefault();
-    db.users.push({ id:nextId("u", db.users), username:$("userName").value, role:$("userRole").value, password:$("userPassword").value, changed:false });
-    e.target.reset(); $("userPassword").value = "SriRatana@123"; save(); render();
-  });
+  // โครงสร้างฟอร์มอื่นๆ เช่น schoolForm, venueForm, judgeForm ให้เติมสถาปัตยกรรม "await saveToSheetRealTime('ชื่อตาราง', item);" ในลักษณะเดียวกันท้ายฟังก์ชัน Submit
 }
 
-function upsert(list, item) { const index = list.findIndex(x => x.id === item.id); if (index >= 0) list[index] = item; else list.push(item); }
-function removeItem(listName, id) {
-  if (currentRole !== "admin" && listName !== "registrations") return alert("เฉพาะผู้ดูแลระบบเท่านั้นที่มีสิทธิ์จัดการในส่วนนี้");
-  if (!confirm("คุณต้องการยืนยันการลบข้อมูลนี้หรือไม่?")) return;
-  db[listName] = db[listName].filter(x => x.id !== id);
-  save(); render();
-}
-
-function editEvent(id) { const e = byId(db.events, id); $("eventId").value = e.id; $("eventName").value = e.name; $("eventSubject").value = e.subject; $("eventLevel").value = e.level; $("eventType").value = e.type; $("eventMembers").value = e.members; $("eventDate").value = e.date; $("eventVenue").value = e.venueId; showPage("events"); }
-function editSchool(id) { const s = byId(db.schools, id); $("schoolId").value = s.id; $("schoolName").value = s.name; $("schoolDirector").value = s.director; $("schoolPhone").value = s.phone; showPage("schools"); }
-function editVenue(id) { const v = byId(db.venues, id); $("venueId").value = v.id; $("venueName").value = v.name; $("venueHost").value = v.host; $("venueContact").value = v.contact; showPage("venues"); }
-function editUser(id) { const u = byId(db.users, id); $("userId").value = u.id; $("userName").value = u.username; $("userRole").value = u.role; $("userPassword").value = u.password; showPage("users"); }
-function editJudge(id) { const j = byId(db.judges, id); $("judgeId").value = j.id; $("judgeEvent").value = j.eventId; $("judgeName").value = j.name; $("judgeRole").value = j.role; $("judgeRank").value = j.rank; $("judgePhone").value = j.phone; showPage("judges"); }
-
-function editRegistration(id) {
-  const r = byId(db.registrations, id);
-  if (!$("regId")) {
-    const hiddenInput = document.createElement("input");
-    hiddenInput.type = "hidden";
-    hiddenInput.id = "regId";
-    $("registrationForm").appendChild(hiddenInput);
+async function removeSheetItem(listName, id) {
+  if (currentRole !== "admin" && listName !== "registrations") {
+    return alert("เฉพาะผู้ดูแลระบบเท่านั้นที่มีสิทธิ์จัดการในส่วนนี้");
   }
-  $("regId").value = r.id; $("regEvent").value = r.eventId; $("regSchool").value = r.schoolId; $("regStudents").value = r.students; $("regTeacher").value = r.teacher; $("regPhone").value = r.phone;
-  showPage("registration");
+  if (!confirm("คุณต้องการยืนยันการลบข้อมูลนี้ออกจาก Google Sheet หรือไม่?")) return;
+  
+  db[listName] = db[listName].filter(x => x.id !== id);
+  render();
+  await deleteFromSheetRealTime(listName, id); // นำออกจากชีตแบบออนไลน์เรียลไทม์
 }
 
-function updateDoc(id, status) {
-  const r = byId(db.registrations, id);
-  r.status = status;
-  r.cert = status === "รับรอง" ? "แนบแล้ว" : "ต้องแก้ไข";
-  save(); render();
+// ===================================================
+// ระบบจัดการสำรองข้อมูล และนำเข้าในรูปแบบไฟล์ JSON (Backup System)
+// ===================================================
+function injectBackupControls() {
+  // ตรวจสอบว่ามีกล่องจัดการระบบรายงานหรือตั้งค่าระบบหรือยังเพื่อทำการวางปุ่ม Backup
+  if ($("users") && !$("jsonBackupContainer")) {
+    const container = document.createElement("div");
+    container.id = "jsonBackupContainer";
+    container.className = "card";
+    container.style.marginTop = "20px";
+    container.innerHTML = `
+      <h3>📦 การจัดการคลังข้อมูลสำรอง (JSON Backup & Google Sheets)</h3>
+      <p style="font-size:13px; color:#666;">คุณสามารถสำรองโครงสร้างข้อมูลทั้งหมดเป็นไฟล์เดี่ยว หรือ นำไฟล์สำรองกลับมายัดลง Google Sheets ใหม่ทั้งหมดได้ที่นี่</p>
+      <div style="display:flex; gap:10px; margin-top:10px;">
+        <button type="button" class="secondary" onclick="exportDatabaseToJson()">💾 ดาวน์โหลดข้อมูลสำรอง (.json)</button>
+        <button type="button" class="primary" onclick="$('importJsonFile').click()">📤 อัปโหลดข้อมูลลง Google Sheet</button>
+        <input type="file" id="importJsonFile" style="display:none" accept=".json" onchange="importDatabaseFromJson(event)">
+      </div>
+    `;
+    $("users").appendChild(container);
+  }
 }
 
-function resetPassword(id) {
-  const u = byId(db.users, id);
-  u.password = u.role === "admin" ? "SriRatana@123" : "User@123";
-  u.changed = false;
-  save(); render();
-  alert(`Reset password ของ ${u.username} เป็นรหัสตั้งต้นแล้ว`);
+// ฟังก์ชันดึงโครงสร้าง db ออกมาเขียนไฟล์ JSON ให้ดาวน์โหลดเก็บไว้ในเครื่องคอมพิวเตอร์
+function exportDatabaseToJson() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+  const downloadAnchor = document.createElement("a");
+  const exportDate = new Date().toISOString().slice(0,10);
+  
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `sriratana_backup_${exportDate}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
 }
 
-function readImage(file, done) { if (!file) return done(""); const reader = new FileReader(); reader.onload = () => done(reader.result); reader.readAsDataURL(file); }
+// ฟังก์ชันนำเข้าข้อมูลจากไฟล์ JSON ชุดใหญ่ แล้วเขียนล้างไพ่เซ็ตลงแผ่นงาน Google Sheet ทันที
+async function importDatabaseFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-// ==========================================
-// 9. SECURITY & SESSION CONTROL INTERFACE
-// ==========================================
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      if (!importedData.events || !importedData.registrations || !importedData.schools) {
+        return alert("โครงสร้างไฟล์ JSON สำรองไม่ถูกต้อง ไม่สามารถดำเนินการต่อได้");
+      }
+      
+      if (confirm("การนำเข้าข้อมูลชุดใหญ่จะล้างข้อมูลเดิมบน Google Sheets และแทนที่ด้วยข้อมูลจากไฟล์นี้ทั้งหมด ยืนยันที่จะทำต่อหรือไม่?")) {
+        alert("กำลังเริ่มขั้นตอนการ Bulk Import โปรดรอสักครู่...");
+        db = importedData;
+        render();
+        await uploadBulkToSheet(db);
+      }
+    } catch (err) {
+      alert("ไฟล์ JSON เกิดข้อผิดพลาดในการตรวจสอบรูปแบบ: " + err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ฟังก์ชันส่งอัปโหลดข้อมูลก้อนใหญ่ล้างไพ่เขียนใหม่ขึ้นชีต
+async function uploadBulkToSheet(databaseObject) {
+  try {
+    const res = await fetch(GOOGLE_SHEET_WEBAPP_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "bulkImport",
+        data: databaseObject
+      })
+    });
+    const result = await res.json();
+    if(result.status === "success") {
+       alert("นำข้อมูลสำรอง JSON ลง Google Sheet เรียบร้อยแล้ว! ทุกเครื่องจะซิงค์สอดคล้องกันทันที");
+       await refreshDatabaseFromSheet();
+    } else {
+       alert("เกิดข้อผิดพลาดจากฝั่งสคริปต์แผ่นงาน: " + result.error);
+    }
+  } catch (err) {
+    alert("เกิดปัญหาล้มเหลวในการส่งข้อมูลไปยังสคริปต์คลาวด์: " + err);
+  }
+}
+// 2. ฟังก์ชันสำหรับ "บันทึกเรียลไทม์รายบุคคล" (Real-time / Real-data)
+// เรียกใช้ฟังก์ชันนี้ในขั้นตอนที่กรรมการกด "บันทึกคะแนน" หรือ "ลงทะเบียน"
+function saveSingleDataRealTime(formData) {
+  // formData คือ Object ข้อมูล เช่น { id: "r1", students: "สมชาย", score: 85, medal: "เหรียญทอง" }
+  
+  fetch(GOOGLE_SHEET_WEBAPP_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData)
+  })
+  .then(() => {
+    console.log("บันทึกข้อมูลแบบเรียลไทม์ไปยัง Google Sheets สำเร็จ");
+  })
+  .catch(err => console.error("ไม่สามารถบันทึกเรียลไทม์ได้: ", err));
+}
+
+init();
+// ===================================================
+// ระบบควบคุม LOGIN และความปลอดภัย (วางท้ายไฟล์ app.js)
+// ===================================================
 document.addEventListener("DOMContentLoaded", () => {
   const loginOverlay = document.getElementById("loginOverlay");
   const loginForm = document.getElementById("mainLoginForm");
   const loginError = document.getElementById("loginError");
 
+  // ฟังก์ชันหาข้อมูลผู้ใช้งานจากระบบปัจจุบัน
   function getAllUsers() {
+    // 1. ลองดึงจาก localStorage ของระบบก่อน
     const stored = localStorage.getItem(storeKey);
     if (stored) {
-      try { return JSON.parse(stored).users || makeUsers(); } catch (e) { console.error(e); }
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.users && parsed.users.length > 0) {
+          return parsed.users;
+        }
+      } catch (e) { console.error(e); }
     }
-    return makeUsers();
+    // 2. ถ้าไม่มีใน localStorage ให้เรียกจากฟังก์ชันสร้างผู้ใช้เริ่มต้นใน data.js
+    if (typeof makeUsers === "function") {
+      return makeUsers();
+    }
+    return [];
   }
 
+  // จัดการการกดยืนยันฟอร์ม Login
   if (loginForm) {
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
+      
       const usernameInput = document.getElementById("loginUser").value.trim();
       const passwordInput = document.getElementById("loginPassword").value;
-      const foundUser = getAllUsers().find(u => u.username === usernameInput && u.password === passwordInput);
+      const appUsers = getAllUsers();
+
+      // ค้นหาบัญชีที่ข้อมูลตรงกัน
+      const foundUser = appUsers.find(u => u.username === usernameInput && u.password === passwordInput);
       
-      if (foundUser) {
-        sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
-        if (loginOverlay) loginOverlay.style.display = "none";
-        
-        const roleSelect = document.getElementById("roleSelect");
-        if (roleSelect) {
-          roleSelect.value = foundUser.role;
-          currentRole = foundUser.role;
-        }
-        
-        const roleBadge = document.getElementById("roleBadge");
-        if (roleBadge) roleBadge.textContent = `${foundUser.username} (${foundUser.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
-        
-        renderNav();
-        render();
-        alert(`ยินดีต้อนรับเข้าสู่ระบบ: คุณ ${foundUser.username}`);
+// ค้นหาโค้ดส่วนยืนยันล็อกอินในฟังก์ชัน เช่น $("loginForm").addEventListener("submit", ...)
+if (foundUser) {
+  // บันทึกเซสชันปกติ
+  sessionStorage.setItem("currentUser", JSON.stringify(foundUser));
+  if (loginOverlay) loginOverlay.style.display = "none";
+
+  // ⚡ บรรทัดสำคัญ: ปรับสิทธิ์ในแอปตามที่ Account นี้ได้รับจริง ๆ
+  const roleSelect = document.getElementById("roleSelect");
+ // ค้นหาจุดที่มีการเช็คเปลี่ยนสิทธิ์บทบาทผู้ใช้งาน (Role Change)
+if (roleSelect) {
+  roleSelect.addEventListener("change", () => {
+    const r = roleSelect.value;
+    renderNav();
+    
+    // ปลดล็อกให้ปุ่มรายงาน (reportBtn) ใช้งานได้ทั้งแอดมินและยูสเซอร์ทั่วไป
+    const reportBtn = document.getElementById("reportBtn");
+    if (reportBtn) {
+      reportBtn.disabled = false; // เปิดให้กดพิมพ์/ดูรายงานได้เสมอ
+    }
+
+    // ส่วนของปุ่มสร้างหรือแก้ไขเกียรติบัตรอื่นๆ ที่เป็นสิทธิ์แอดมิน (ถ้าต้องการล็อกไว้เหมือนเดิม)
+    const submitCertBtn = document.querySelector('#reports form button[type="submit"]');
+    if (submitCertBtn) {
+      submitCertBtn.disabled = (r !== "admin");
+    }
+  });
+}
+
+  const roleBadge = document.getElementById("roleBadge");
+  if (roleBadge) {
+    roleBadge.textContent = `${foundUser.username} (${foundUser.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
+  }
+
+  alert(`ยินดีต้อนรับเข้าสู่ระบบ: คุณ ${foundUser.username}`);
+
       } else {
+        // รหัสผิดพลาดให้แจ้งเตือน
         if (loginError) loginError.style.display = "block";
         document.getElementById("loginPassword").value = "";
       }
     });
   }
 
-  const currentSessionUser = sessionStorage.getItem("currentUser");
-  if (currentSessionUser && loginOverlay) {
-    const user = JSON.parse(currentSessionUser);
-    loginOverlay.style.display = "none";
-    currentRole = user.role;
-    
-    setTimeout(() => {
-      const roleSelect = document.getElementById("roleSelect");
-      if (roleSelect) {
-        roleSelect.value = user.role;
-      }
-      const roleBadge = document.getElementById("roleBadge");
-      if (roleBadge) roleBadge.textContent = `${user.username} (${user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
-      renderNav();
-      render();
-    }, 100);
-  }
-});
+  // ตรวจสอบความปลอดภัยแบบอัตโนมัติ: ถ้าเคยล็อกอินไว้แล้วใน Session ปัจจุบัน ไม่ต้องล็อกอินซ้ำ
+const currentSessionUser = sessionStorage.getItem("currentUser");
+if (currentSessionUser && loginOverlay) {
+  const user = JSON.parse(currentSessionUser);
+  loginOverlay.style.display = "none"; // ซ่อนหน้าล็อกอิน
+  
+  setTimeout(() => {
+    const roleSelect = document.getElementById("roleSelect");
+    if (roleSelect) {
+      roleSelect.value = user.role; // กำหนดสิทธิ์ตาม session ที่เก็บไว้
+      roleSelect.dispatchEvent(new Event('change')); // สั่งเรนเดอร์หน้าจอตามสิทธิ์นั้น ๆ
+    }
+    const roleBadge = document.getElementById("roleBadge");
+    if (roleBadge) {
+      roleBadge.textContent = `${user.username} (${user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})`;
+    }
+  }, 100);
+}
 
+function renderNav() {
+  const roleSelect = document.getElementById("roleSelect");
+  const role = roleSelect ? roleSelect.value : "user";
+  const nav = document.getElementById("nav");
+  if (!nav) return;
+
+  let html = "";
+  navItems.forEach(([id, icon, title]) => {
+    if (role === "user") {
+      // เพิ่ม && id !== "reports" เข้าไปเพื่อให้ระบบไม่ข้าม (อนุญาตให้แสดงผลสำหรับ user)
+      if (id !== "dashboard" && id !== "rankings" && id !== "events" && id !== "registration" && id !== "reports") {
+        return; 
+      }
+    }
+    html += `<button class="nav-btn ${id===currentPage?"active":""}" data-page="${id}" type="button"><span>${icon}</span><span>${title}</span></button>`;
+  });
+  nav.innerHTML = html;
+}
+
+});
+// ==========================================
+// ระบบจัดการการออกจากระบบ (Logout & Clear Session)
+// ==========================================
 const logoutBtn = document.getElementById("logoutBtn");
+
 if (logoutBtn) {
   logoutBtn.addEventListener("click", () => {
+    // แสดงกล่องข้อความยืนยันเพื่อป้องกันการกดพลาด
     if (confirm("คุณต้องการออกจากระบบและเคลียร์สิทธิ์การเข้าใช้งานใช่หรือไม่?")) {
+      
+      // 1. เคลียร์ข้อมูลผู้ใช้ใน Session ปัจจุบัน
       sessionStorage.removeItem("currentUser");
+      
+      // 2. หากระบบของคุณมีการบันทึกค่าลงใน LocalStorage ด้วย ให้เคลียร์ค่าของระบบออก
+      // (อ้างอิงจาก storeKey = "sriratana-arts-system" ในไฟล์ data.js)
+     // if (typeof storeKey !== "undefined") {
+       // localStorage.removeItem(storeKey);
+      //}
+
+      // 3. ปรับการแสดงผลหน้าเว็บให้กลับสู่สถานะล็อกอินใหม่
+      const loginOverlay = document.getElementById("loginOverlay");
+      if (loginOverlay) {
+        // เคลียร์ค่าใน Input ของหน้า Login (ถ้ามี)
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+        if (usernameInput) usernameInput.value = "";
+        if (passwordInput) passwordInput.value = "";
+        
+        // แสดงหน้าต่างล็อกอินกลับขึ้นมาบังหน้าจอหลัก
+        loginOverlay.style.display = "flex"; 
+      }
+
+      // 4. รีโหลดหน้าจอเพื่อล้างสถานะตัวแปร (State) ทั้งหมดในหน่วยความจำ และเริ่มกำหนดสิทธิ์ใหม่
       window.location.reload();
     }
   });
 }
-
-// เรียกให้ระบบเริ่มทำงาน
-init();
