@@ -1,3 +1,59 @@
+// กำหนด URL ของ Web App ที่ได้จาก Google Apps Script
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyAoP61fE4EQPq7CPxptT1V9OErkLcQRUnEzgz2qPUYnUdW1TAZGN-IIQHNq3j4NESmxQ/exec";
+
+// 1. ฟังก์ชันดึงข้อมูลจาก Google Sheet มาแสดงผล (Real-time ดึงใหม่เมื่อเรียกใช้)
+async function loadDataFromGoogleSheet() {
+  try {
+    const response = await fetch(SCRIPT_URL);
+    const data = await response.json();
+    
+    // นำข้อมูล 'data' (ที่เป็น Array ของ Object) ไป render ลงหน้าเว็บแทนที่ของเดิม
+    console.log("ข้อมูลล่าสุดจาก Google Sheet:", data);
+    
+    // ตัวอย่าง: อัปเดตข้อมูลเข้าตัวแปรหลักในแอปของคุณ
+    // globalAppData = data; 
+    // renderTable(); // เรียกฟังก์ชันวาดตารางใหม่ของคุณ
+    
+  } catch (error) {
+    console.error("โหลดข้อมูลล้มเหลว:", error);
+  }
+}
+
+// 2. ฟังก์ชันส่งข้อมูลไปบันทึกที่ Google Sheet เมื่อมีการบันทึกคะแนน/ผลการแข่งขัน
+async function saveDataToGoogleSheet(newDataArray) {
+  try {
+    // ใช้ URL เดียวกันที่ตั้งไว้
+    const response = await fetch(SCRIPT_URL, {
+      method: "POST",
+      // ปรับเปลี่ยนวิธีส่งข้อมูลเป็นรูปแบบ URL Encoded หรือ Text เพื่อเลี่ยง CORS ของ Apps Script อย่างสมบูรณ์
+      body: JSON.stringify({
+        action: "addData",
+        data: newDataArray 
+      })
+    });
+    
+    const result = await response.json();
+    if (result.status === "success") {
+      alert("บันทึกข้อมูลลง Google Sheet สำเร็จ!");
+      loadDataFromGoogleSheet(); // รีโหลดข้อมูลแบบ Real-time
+    } else {
+      alert("เกิดข้อผิดพลาดจากเซิร์ฟเวอร์: " + result.message);
+    }
+  } catch (error) {
+    console.error("บันทึกข้อมูลล้มเหลว:", error);
+    // แจ้งเตือนเพื่อให้ผู้ใช้ทราบว่าไม่เข้า Sheet
+    alert("ไม่สามารถเชื่อมต่อกับ Google Sheet ได้ (ตรวจสอบการ Deploy Web App)");
+  }
+}
+
+// 3. เพื่อให้รองรับ Multi-user และแสดงผลแบบ Real-time ใกล้เคียงปัจจุบันที่สุด
+// ให้ทำการตั้ง Timer ดึงข้อมูลใหม่ทุกๆ 10 หรือ 30 วินาที
+setInterval(loadDataFromGoogleSheet, 10000); // 10000 ms = 10 วินาที
+
+// เรียกทำงานครั้งแรกเมื่อเปิดหน้าเว็บ
+document.addEventListener("DOMContentLoaded", () => {
+  loadDataFromGoogleSheet();
+});
 // CONSTANTS DATA SEEDS
 const today = new Date().toISOString().slice(0,10);
 const storeKey = "sriratana-arts-system";
@@ -264,32 +320,32 @@ function rankedSchools() {
   }));
 }
 function renderDashboard() {
-  const pending = db.registrations.filter(r => r.status === "รอตรวจ").length; //[cite: 2]
-  const totalStudents = db.registrations.reduce((sum, r) => sum + Math.max(1, String(r.students).split(/\n|,/).filter(Boolean).length), 0); //[cite: 2]
-  const sortedEvents = [...db.events]
-		.sort((a, b) => new Date(a.date) - new Date(b.date)); // เรียงลำดับจากวันที่น้อย (เก่าสุด) ไปหามาก (ใหม่สุด)
-  const stats = [
-    ["รายการแข่งขัน", db.events.length, `${subjects.length} กลุ่มสาระ`], //[cite: 2]
-    ["นักเรียนลงทะเบียน", totalStudents, "จากฐานข้อมูลรับสมัคร"], //[cite: 2]
-    ["โรงเรียน", db.schools.length, "โรงเรียนในกลุ่มศรีรัตนะ"], //[cite: 2]
-    ["รอตรวจเอกสาร", pending, "รายการต้องดำเนินการ"] //[cite: 2]
-  ];
-  $("stats").innerHTML = stats.map(s => `<div class="card stat"><span class="label">${s[0]}</span><span class="value">${s[1]}</span><span class="note">${s[2]}</span></div>`).join(""); //[cite: 2]
-  $("topMedals").innerHTML = medalRows(rankedSchools().slice(0,10), true); //[cite: 2]
+  const pending = db.registrations.filter(r => r.status === "รอตรวจ").length; //
+  const totalStudents = db.registrations.reduce((sum, r) => sum + Math.max(1, String(r.students).split(/\n|,/).filter(Boolean).length), 0); //
   
-  // === ส่วนที่แก้ไข: เรียงลำดับตามวันที่แข่งขันล่าสุด และตัดมาแสดง 5 รายการ ===
+  const stats = [
+    ["รายการแข่งขัน", db.events.length, `${subjects.length} กลุ่มสาระ`], //
+    ["นักเรียนลงทะเบียน", totalStudents, "จากฐานข้อมูลรับสมัคร"], //
+    ["โรงเรียน", db.schools.length, "โรงเรียนในกลุ่มศรีรัตนะ"], //
+    ["รอตรวจเอกสาร", pending, "รายการต้องดำเนินการ"] //
+  ];
+  $("stats").innerHTML = stats.map(s => `<div class="card stat"><span class="label">${s[0]}</span><span class="value">${s[1]}</span><span class="note">${s[2]}</span></div>`).join(""); //
+  $("topMedals").innerHTML = medalRows(rankedSchools().slice(0,10), true); //
+  
+  // จัดการเรียงลำดับและดึง 5 รายการล่าสุด
   const recentEvents = [...db.events]
-    .sort((a, b) => new Date(b.date) - new Date(a.date)) // เรียงจากวันที่ใหม่สุดไปเก่าสุด (หรือสลับเป็น a - b เพื่อเรียงจากเก่าไปใหม่)
-    .slice(0, 5); // แสดง 5 รายการล่าสุด
+    .sort((a, b) => new Date(b.date) - new Date(a.date)) 
+    .slice(0, 5); 
     
-$("todayEvents").innerHTML = table(
+  // แก้ไขตรงนี้จากเดิม sortedEvents ให้กลายเป็น recentEvents ตามที่มีการประมวลผลไว้
+  $("todayEvents").innerHTML = table(
     ["รายการ", "กลุ่มสาระ", "ระดับ", "สนาม", "วันที่แข่งขัน"], 
-    sortedEvents.map(e => [
+    recentEvents.map(e => [
       e.name, 
       e.subject, 
       e.level, 
       byId(db.venues, e.venueId).name || "-",
-      e.date // แสดงวันที่แข่งขันในตาราง
+      e.date
     ])
   );
 }
@@ -374,8 +430,11 @@ function renderResults() {
   html += "</tbody>";
   table.innerHTML = html;
   
-  // เรียกฟังก์ชันจัดการสิทธิ์ปุ่มซ่อน/แสดงอีกครั้งหลังจากวาดตารางเสร็จ
-  if(typeof applyRoleSecurity === "function") applyRoleSecurity();
+function applyRoleSecurity() {
+  // ควบคุมการแสดงผลตามสิทธิ์ของผู้ใช้งานในจุดต่าง ๆ
+  document.querySelectorAll(".admin-only").forEach(el => el.style.display = (currentRole === "admin") ? "" : "none");
+  document.querySelectorAll(".user-only").forEach(el => el.style.display = (currentRole === "user") ? "" : "none");
+}
 }
 
 function editResult(regId) {
@@ -476,28 +535,27 @@ function rowActions(action, id, danger=false) {
 // ==========================================
 // 8. DATA OPERATIONS & FORMS BINDING
 // ==========================================
-function bindForms() {
-  document.addEventListener("click", e => {
-    const btn = e.target.closest("[data-action]");
-    if (!btn) return;
-    const { action, id } = btn.dataset;
-    if (action === "editEvent") editEvent(id);
-    if (action === "deleteEvent") removeItem("events", id);
-    if (action === "editSchool") editSchool(id);
-    if (action === "deleteSchool") removeItem("schools", id);
-    if (action === "editVenue") editVenue(id);
-    if (action === "deleteVenue") removeItem("venues", id);
-    if (action === "approveDoc") updateDoc(id, "รับรอง");
-    if (action === "rejectDoc") updateDoc(id, "ต้องแก้ไข");
-    if (action === "resetPassword") resetPassword(id);
-	if (action === "editRegistration") editRegistration(id);
-    if (action === "deleteRegistration") removeItem("registrations", id);
-	if (action === "editJudge") editJudge(id);
-    if (action === "deleteJudge") removeItem("judges", id);
-	if (action === "editUser") editUser(id);
-	if (action === "deleteUser") removeItem("users", id);
-  });
-  
+  function bindForms() {
+  // ค้นหาฟอร์มบันทึกผลการประกวด/แข่งขัน (เช่น ฟอร์มที่มีไอดี resultForm)
+  const resultForm = document.getElementById("resultForm");
+  if (resultForm) {
+    resultForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      // ดึงค่าจากฟอร์มในหน้า UI
+      const regId = document.getElementById("resultRegId").value;
+      const score = document.getElementById("resultScore").value;
+      const medal = document.getElementById("resultMedal").value;
+      const rank = document.getElementById("resultRank").value;
+      
+      // ตัวอย่างการจัดเตรียมข้อมูลเป็น Array ส่งไปบันทึกที่ Google Sheet
+      const dataToSave = [regId, score, medal, rank, new Date().toLocaleString("th-TH")];
+      
+      // เรียกใช้ฟังก์ชันเพื่อบันทึกข้อมูลลง Google Sheet ทันที
+      saveDataToGoogleSheet(dataToSave);
+    });
+  }
+}
   if($("eventSearch")) $("eventSearch").addEventListener("input", renderEvents);
   if($("eventForm")) $("eventForm").addEventListener("submit", e => {
     e.preventDefault();
@@ -885,7 +943,7 @@ function openReport() {
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
+const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyAoP61fE4EQPq7CPxptT1V9OErkLcQRUnEzgz2qPUYnUdW1TAZGN-IIQHNq3j4NESmxQ/exec";
 // 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
