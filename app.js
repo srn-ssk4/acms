@@ -3,22 +3,42 @@
 // =========================================================================
 const API_URL = "https://script.google.com/macros/s/AKfycbzbKaf7c2VtfcNuIU1G0yOTFb3jqmA6d241wIwfgfBCIwkWPS21C1SHnB-SWK1axh1-CA/exec";
 let localDatabase = {};
-
+// ตัวอย่างจุดเริ่มต้นของแอปพลิเคชัน (ถ้ามีฟังก์ชันโหลดธีม)
+function initTheme() {
+  // ดึงค่าธีมจากเครื่อง ถ้าไม่มีเลยจริงๆ ค่อยไปดูใน db หรือใช้ค่าเริ่มต้น
+  const savedTheme = localStorage.getItem("sriratana-arts-theme") || db.theme || "default";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+}
 // ฟังก์ชันดึงข้อมูลดั้งเดิม ปรับปรุงส่งต่อข้อมูลไปยังตัวแปรหลักระบบ (db)
 async function fetchDatabase(callback) {
   try {
     const response = await fetch(API_URL, { method: "GET" });
     const result = await response.json();
     
-    if (result.status === "success") {
-      localDatabase = result.db;
-      // เชื่อมข้อมูลเรียลไทม์เข้ากับ state หลัก (db) ของเบราว์เซอร์
-      db = { ...db, ...localDatabase }; 
-      save(); // บันทึกลง localStorage ไว้สำรอง
-      console.log("📥 [Real-time Sync] อัปเดตข้อมูลจาก Google Sheet สำเร็จ:", localDatabase);
-      
-      if (typeof callback === "function") callback(db);
-    }
+  if (result.status === "success") {
+  localDatabase = result.db;
+  
+  // 1. สำรองข้อมูลธีมที่อยู่ในเครื่องปัจจุบันไว้ก่อน
+  const currentLocalTheme = db.theme || localStorage.getItem("selected-theme");
+  
+  // 2. เชื่อมข้อมูลจากคลาวด์
+  db = { ...db, ...localDatabase }; 
+  
+  // 3. บังคับให้ใช้ธีมจากเครื่องเดิม ไม่ให้ค่าจากคลาวด์มาทับ
+  if (currentLocalTheme) {
+    db.theme = currentLocalTheme;
+  }
+  
+  save(); // บันทึกลง localStorage ไว้สำรอง
+  console.log("📥 [Real-time Sync] อัปเดตข้อมูลสำเร็จ (คงค่าธีมเดิมของเครื่องไว้):", db.theme);
+  
+  // 4. สั่งให้แสดงผลธีมที่ถูกต้องทันที
+  if (typeof applyTheme === "function" && db.theme) {
+    applyTheme(db.theme);
+  }
+  
+  if (typeof callback === "function") callback(db);
+}
   } catch (error) {
     console.error("❌ ไม่สามารถเชื่อมต่อกับ Google Sheets API ได้:", error);
   }
