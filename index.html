@@ -392,14 +392,14 @@
 				⎋ ออกจากระบบ
 			</button>
 		</div>
-	  <div class="admin-only" style="margin-top: 15px; padding: 0 16px; display: flex; gap: 8px;">
-			<button onclick="backupDatabaseToJson()" style="background: var(--primary); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold;">
+		<div class="toolbar-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+			<button id="backupBtn" onclick="backupSystemToGoogleSheet()" style="background: var(--primary); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold;">
 				💾 สำรองข้อมูลระบบ(Google Sheet)
 			</button>
-				<button onclick="document.getElementById('importFile').click()" style="background: var(--accent); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold; margin-left: 8px;">
+			<button type="button" onclick="document.getElementById('importFile').click()" style="background: var(--accent); color: white; padding: 10px 16px; border: none; border-radius: var(--radius); cursor: pointer; font-weight: bold;">
 				📤 นำเข้าข้อมูล (JSON)
 			</button>
-		<input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDatabaseFromJson(event)">
+			<input type="file" id="importFile" accept=".json" style="display: none;" onchange="importDatabaseFromJson(event)">
 		</div>
     </main>
   <!-- Script เพิ่มเติมสำหรับควบคุมการเปิด-ปิดเมนูบนสมาร์ตโฟน -->

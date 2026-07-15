@@ -1,19 +1,10 @@
 // =========================================================================
-// 1. การตั้งค่าโครงสร้างและที่อยู่ API
+// 1. การตั้งค่าโครงสร้างและที่อยู่ API (อัปเดตให้รองรับ Real-time และ Sync All)
 // =========================================================================
-// ⚠️ เปลี่ยน URL นี้ให้เป็น Web App URL ที่ได้จากการ Deploy เวอร์ชันใหม่ล่าสุดใน Google Apps Script
-const API_URL = "https://script.google.com/macros/s/AKfycbw7E4uume-xqq4cuxqOOImcg6iKda0g4kamGM3UZRBdo6zgi8ngfhRkspZMDIbQtYUxig/exec";
-
-// ตัวแปรส่วนกลางสำหรับเก็บข้อมูลในฝั่ง Client (Local Cache)
+const API_URL = "https://script.google.com/macros/s/AKfycbwtx-qj6Xi7LGkwQDopyy11DDkwIs0y9TAVbP2aqA4eVRwpUIumvxdPF7zuuAEjjH8g4w/exec";
 let localDatabase = {};
 
-// =========================================================================
-// 2. ฟังก์ชันดึงข้อมูลจาก Google Sheet (READ / GET Request)
-// =========================================================================
-/**
- * ฟังก์ชันดึงข้อมูลทั้งหมดจาก Google Sheet มาเก็บไว้ที่ตัวแปรฝั่ง Web App
- * @param {Function} callback - ฟังก์ชันที่จะให้ทำงานต่อหลังจากดึงข้อมูลเสร็จ (เช่น สั่งเรนเดอร์ตารางใหม่)
- */
+// ฟังก์ชันดึงข้อมูลดั้งเดิม ปรับปรุงส่งต่อข้อมูลไปยังตัวแปรหลักระบบ (db)
 async function fetchDatabase(callback) {
   try {
     const response = await fetch(API_URL, { method: "GET" });
@@ -21,18 +12,100 @@ async function fetchDatabase(callback) {
     
     if (result.status === "success") {
       localDatabase = result.db;
-      console.log("📥 ดึงข้อมูลจาก Google Sheet สำเร็จ:", localDatabase);
+      // เชื่อมข้อมูลเรียลไทม์เข้ากับ state หลัก (db) ของเบราว์เซอร์
+      db = { ...db, ...localDatabase }; 
+      save(); // บันทึกลง localStorage ไว้สำรอง
+      console.log("📥 [Real-time Sync] อัปเดตข้อมูลจาก Google Sheet สำเร็จ:", localDatabase);
       
-      if (typeof callback === "function") {
-        callback(localDatabase);
-      }
-    } else {
-      console.error("❌ เกิดข้อผิดพลาดจาก Server:", result.message);
+      if (typeof callback === "function") callback(db);
     }
   } catch (error) {
     console.error("❌ ไม่สามารถเชื่อมต่อกับ Google Sheets API ได้:", error);
   }
 }
+
+// ฟังก์ชันส่งข้อมูลขึ้นคลาวด์
+async function saveToDatabase(sheetName, action, rowData, successCallback) {
+  updateLocalCache(sheetName, action, rowData);
+  if (typeof successCallback === "function") successCallback(db);
+
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheetName, action, data: rowData })
+    });
+    console.log(`📤 ส่งคำสั่ง ${action} ไปยังแท็บ ${sheetName} เรียบร้อยแล้ว`);
+  } catch (error) {
+    console.error("❌ ซิงค์ข้อมูลขัดข้อง:", error);
+  }
+}
+
+// 💾 ฟังก์ชันปุ่ม: สำรองข้อมูลระบบทั้งหมด ไปยัง Google Sheet (เรียลไทม์)
+async function backupSystemToGoogleSheet() {
+  const backupBtn = document.getElementById("backupBtn");
+  if(backupBtn) backupBtn.innerText = "⏳ กำลังส่งข้อมูล...";
+  
+  try {
+    // ส่งโครงสร้างฐานข้อมูล db ปัจจุบันทั้งหมดไปทับบน Google Sheet 
+    await fetch(API_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "sync_all", db: db })
+    });
+    alert("💾 สำรองข้อมูลระบบเข้าสู่ Google Sheet เรียบร้อยแล้ว!");
+  } catch (error) {
+    console.error(error);
+    alert("เกิดข้อผิดพลาดในการสำรองข้อมูล");
+  } finally {
+    if(backupBtn) backupBtn.innerText = "💾 สำรองข้อมูลระบบ(Google Sheet)";
+  }
+}
+
+// 📤 ฟังก์ชันปุ่ม: นำเข้าข้อมูลจากไฟล์ JSON และส่งเข้าสู่ Google Sheet ทันที
+function importDatabaseFromJson(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      if (confirm("คุณต้องการนำเข้าข้อมูลนี้ใช่หรือไม่? ข้อมูลเดิมจะถูกเขียนทับ")) {
+        // 1. อัปเดตในระบบ local หน้าเว็บทันที
+        db = importedData;
+        save();
+        
+        // 2. ยิงส่งขึ้น Google Sheet เพื่อซิงค์ข้อมูลให้ตรงกันทันที
+        await fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "import_json", db: db })
+        });
+        
+        alert("📤 นำเข้าข้อมูลระบบและซิงค์ไปยัง Google Sheet สำเร็จ!");
+        render(); // โหลดการแสดงผล UI ใหม่ทั้งหมด
+      }
+    } catch (err) {
+      alert("❌ ไฟล์ JSON ไม่ถูกต้องตามรูปแบบฐานข้อมูลระบบ");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ปรับตั้งเวลาตรวจสอบ Real-time Short Polling ให้เช็คความเปลี่ยนแปลงของแผ่นงานทุกๆ 10 วินาที
+function initRealtimeSync(renderUIFunction) {
+  fetchDatabase(renderUIFunction);
+  setInterval(() => {
+    fetchDatabase(renderUIFunction);
+  }, 10000); // 10 วินาทีเรียลไทม์
+}
+
+// ผูกปุ่ม Event ในฟังก์ชัน init() หรือจุดโหลดหน้าเว็บ
+// document.getElementById("backupBtn").addEventListener("click", backupSystemToGoogleSheet);
 
 // =========================================================================
 // 3. ฟังก์ชันบันทึกข้อมูลไปยัง Google Sheet (WRITE / POST Request)
@@ -214,8 +287,12 @@ function init() {
   $("saveThemeSettings").addEventListener("click", saveThemeSettings);
   $("resetThemeSettings").addEventListener("click", resetThemeSettings);
   $("seedBtn").addEventListener("click", () => { if (confirm("คืนค่าข้อมูลตัวอย่างทั้งหมด?")) { db = seed(); save(); render(); } });
+  
   bindForms();
-  render();
+  
+  // ⚡ แก้ไขจุดนี้: เปลี่ยนจาก render() ปกติ เป็นเปิดใช้งานระบบ Real-time Sync
+  // โดยส่งฟังก์ชัน render เป็น Callback เพื่อวาด UI ใหม่เมื่อดึงข้อมูลเสร็จ
+  initRealtimeSync(render); 
 }
 
 function showPage(id) {
@@ -672,11 +749,20 @@ if($("registrationForm")) $("registrationForm").addEventListener("submit", e => 
       medalApplied: oldReg.medalApplied || false
     };
 
-    upsert(db.registrations, item);
-    e.target.reset();
-    if($("regId")) $("regId").value = ""; // เคลียร์ ID หลังบันทึกสำเร็จ
-    save(); 
-    render();
+// อัปเดตข้อมูลในระบบ Local ก่อน
+upsert(db.registrations, item);
+save();
+
+// ⚡ บันทึกเรียลไทม์ลง Google Sheet (แปลง Object เป็น Array ตามลำดับ Schema ของคุณ)
+// ตัวอย่างลำดับ: [id, eventId, schoolId, students, teacher, phone, photo, cert, status, score, medal, rank]
+const rowData = [
+  item.id, item.eventId, item.schoolId, item.students, item.teacher, 
+  item.phone, item.photo, item.cert, item.status, item.score, item.medal, item.rank
+];
+saveToDatabase("registrations", "insert", rowData, render);
+
+e.target.reset();
+if($("regId")) $("regId").value = "";
   });
   
 if ($("resultForm")) {
@@ -707,10 +793,20 @@ if ($("resultForm")) {
     targetReg.score = score;
     targetReg.medal = medal;
     targetReg.rank = rank;
+// อัปเดตลง Array และ Save ลง LocalStorage
+save();
 
-    // อัปเดตลง Array และ Save ลง LocalStorage
-    save();
-    render();
+// ⚡ บันทึกเรียลไทม์ลง Google Sheet ในแท็บ registrations (เป็นการ Action แบบ update)
+const rowData = [
+  targetReg.id, targetReg.eventId, targetReg.schoolId, targetReg.students, targetReg.teacher, 
+  targetReg.phone, targetReg.photo, targetReg.cert, targetReg.status, targetReg.score, targetReg.medal, targetReg.rank
+];
+saveToDatabase("registrations", "update", rowData, render);
+
+// รีเซ็ตฟอร์มให้กลับเป็นค่าว่าง
+e.target.reset();
+$("resultRegId").value = ""; 
+alert("บันทึกคะแนนและผลการแข่งขันสำเร็จ!");
     
     // รีเซ็ตฟอร์มให้กลับเป็นค่าว่าง
     e.target.reset();
@@ -780,20 +876,21 @@ function upsert(list, item) {
   if (index >= 0) list[index] = item; else list.push(item);
 }
 function removeItem(listName, id) {
-  // หากเป็นผู้ใช้งานทั่วไป (User) ไม่อนุญาตให้ลบข้อมูลส่วนกลางเด็ดขาด
   if (currentRole !== "admin") {
     if (listName !== "registrations") {
       return alert("เฉพาะผู้ดูแลระบบเท่านั้นที่มีสิทธิ์จัดการในส่วนนี้");
     }
-    // ตัวอย่างเพิ่มเติม: หากเป็น User ควรเช็คเพิ่มว่าเป็นเจ้าของรายการลงทะเบียนนั้นไหม
-    const item = byId(db.registrations, id);
-    // if (item.schoolId !== currentUserSchoolId) return alert("ไม่สามารถลบข้อมูลของโรงเรียนอื่นได้");
   }
   
   if (!confirm("คุณต้องการยืนยันการลบข้อมูลนี้หรือไม่?")) return;
-  db[listName] = db[listName].filter(x => x.id !== id);
-  save(); 
-  render();
+  
+  // ⚡ สั่งลบบน Google Sheet เรียบลไทม์
+  // ส่ง rowData ที่มีแค่ ID ในตำแหน่งแรกสุดเพื่อให้อ้างอิงแถวที่จะลบได้
+  saveToDatabase(listName, "delete", [id], () => {
+    db[listName] = db[listName].filter(x => x.id !== id);
+    save();
+    render();
+  });
 }
 function editEvent(id) {
   const e = byId(db.events, id);
@@ -1000,7 +1097,7 @@ function openReport() {
 // ==========================================
 // ระบบสำรองข้อมูล และ นำเข้าข้อมูล (JSON Backup)
 // ==========================================
-const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbycHf_ofz1T7X6wnJIapKyOaer750uWq16LoMTeM8UqkRjYE5DRxXqwgEt8kHVRtjwFcw/exec";
+const GOOGLE_SHEET_WEBAPP_URL = ("API_URL");
 // 1. ฟังก์ชันสำหรับ "นำเข้าข้อมูลจาก JSON" (Bulk Import) ไปยัง Google Sheets
 function importDatabaseFromJson(event) {
   const file = event.target.files[0];
