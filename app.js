@@ -15,19 +15,26 @@ async function fetchDatabase(callback) {
     const response = await fetch(API_URL, { method: "GET" });
     const result = await response.json();
     
-  if (result.status === "success") {
-  localDatabase = result.db;
-  
-  // 1. สำรองข้อมูลธีมที่อยู่ในเครื่องปัจจุบันไว้ก่อน
-  const currentLocalTheme = db.theme || localStorage.getItem("selected-theme");
-  
-  // 2. เชื่อมข้อมูลจากคลาวด์
-  db = { ...db, ...localDatabase }; 
-  
-  // 3. บังคับให้ใช้ธีมจากเครื่องเดิม ไม่ให้ค่าจากคลาวด์มาทับ
-  if (currentLocalTheme) {
-    db.theme = currentLocalTheme;
-  }
+    if (result.status === "success") {
+      localDatabase = result.db;
+      
+      // 1. สำรองข้อมูลธีมที่อยู่ในเครื่องปัจจุบันไว้ก่อน
+      const currentLocalTheme = localStorage.getItem("sriratana-arts-theme") || "default";
+      
+      // 2. เชื่อมข้อมูลจากคลาวด์
+      db = { ...db, ...localDatabase }; 
+      
+      // 🛑 [เพิ่มโค้ดดักจับตรงนี้] ตรวจสอบว่าค่าธีมที่ได้มาจาก Cloud เป็น 0, "0", null หรือ undefined หรือไม่
+      if (!db.theme || db.theme === "0" || db.theme === 0) {
+        // ถ้าเป็น 0 ให้ใช้ค่าเดิมในเครื่อง หรือใช้ค่า "default" แทน
+        db.theme = currentLocalTheme !== "0" ? currentLocalTheme : "default";
+      }
+      
+      // 3. อัปเดตธีมลงหน้าเว็บและ LocalStorage ให้ถูกต้อง
+      localStorage.setItem("sriratana-arts-theme", db.theme);
+      document.documentElement.setAttribute(\"data-theme\", db.theme);
+      
+      // โค้ดส่วนอื่นๆ ของคุณ...
   
   save(); // บันทึกลง localStorage ไว้สำรอง
   console.log("📥 [Real-time Sync] อัปเดตข้อมูลสำเร็จ (คงค่าธีมเดิมของเครื่องไว้):", db.theme);
