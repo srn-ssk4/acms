@@ -1,7 +1,7 @@
 // =========================================================================
 // 1. การตั้งค่าโครงสร้างและที่อยู่ API (อัปเดตให้รองรับ Real-time และ Sync All)
 // =========================================================================
-const API_URL = "https://script.google.com/macros/s/AKfycbzxZhg5jjga9y646UQVg2VVmbE6UDXUhJq4grInMsIYIRtAYbb4N7WS4zZOsVEilIL3DQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzbKaf7c2VtfcNuIU1G0yOTFb3jqmA6d241wIwfgfBCIwkWPS21C1SHnB-SWK1axh1-CA/exec";
 let localDatabase = {};
 
 // ฟังก์ชันดึงข้อมูลดั้งเดิม ปรับปรุงส่งต่อข้อมูลไปยังตัวแปรหลักระบบ (db)
