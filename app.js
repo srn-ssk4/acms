@@ -32,7 +32,7 @@ async function fetchDatabase(callback) {
       
       // 3. อัปเดตธีมลงหน้าเว็บและ LocalStorage ให้ถูกต้อง
       localStorage.setItem("sriratana-arts-theme", db.theme);
-      document.documentElement.setAttribute(\"data-theme\", db.theme);
+      document.documentElement.setAttribute(db.theme);
       
       // โค้ดส่วนอื่นๆ ของคุณ...
   
