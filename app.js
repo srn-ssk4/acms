@@ -329,12 +329,30 @@ function showPage(id) {
   $("pageTitle").textContent = navItems.find(x => x[0] === id)?.[2] || "ระบบการแข่งขัน";
   render();
 }
-
 // ==========================================
 // 5. THEME RENDERING OPERATIONS
 // ==========================================
+
+// คีย์สำหรับเก็บเฉพาะการตั้งค่าธีมแยกต่างหากในเครื่อง
+const THEME_STORE_KEY = "custom-theme-settings";
+
+// 1. ดึงค่าธีมล่าสุดจาก localStorage ของเครื่องโดยตรง (ถ้าไม่มีให้ใช้ค่าเริ่มต้น)
 function currentThemeSettings() {
-  return db.themeSettings || themeDefaults[db.theme] || themeDefaults.default;
+  const savedTheme = localStorage.getItem(THEME_STORE_KEY);
+  if (savedTheme) {
+    try {
+      return JSON.parse(savedTheme);
+    } catch (e) {
+      console.error("Error parsing theme from localStorage", e);
+    }
+  }
+  // ค่าสีเริ่มต้นระบบ (Default Theme) เผื่อกรณีรันครั้งแรกหรือกดรีเซ็ต
+  return { 
+    bg: "#f5f7fb", panel: "#ffffff", text: "#14202e", line: "#d9e2ec", 
+    primary: "#126a6f", primary2: "#0e8780", accent: "#d28722", 
+    sidebar: "#12202e", heroFrom: "#126a6f", heroTo: "#0e8780", 
+    radius: 8, font: '"Segoe UI", Tahoma, sans-serif' 
+  };
 }
 
 function hexToRgba(hex, alpha) {
@@ -347,6 +365,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+// 2. นำสไตล์ CSS ไปประยุกต์ใช้กับหน้าเว็บ
 function applyThemeSettings(settings = currentThemeSettings()) {
   const root = document.documentElement.style;
   root.setProperty("--bg", settings.bg);
@@ -393,24 +412,26 @@ function openThemePanel() {
 function closeThemePanel() {
   $("themePanel").classList.remove("open");
   $("themePanel").setAttribute("aria-hidden", "true");
-  applyThemeSettings();
+  applyThemeSettings(); // ดึงค่าจริงกลับมาแสดงผลกรณีปิด panel โดยไม่ได้กดเซฟ
 }
 
+// 3. บันทึกโทนสีลง localStorage ในเครื่องทันที (ไม่ยุ่งกับ db หลัก ไม่ส่งเข้าชีตหรือเซฟลงไฟล์)
 function saveThemeSettings() {
-  db.theme = "custom";
-  db.themeSettings = readThemeControls();
-  save();
-  render();
+  const settings = readThemeControls();
+  localStorage.setItem(THEME_STORE_KEY, JSON.stringify(settings)); // บันทึกแยกคีย์ลงเครื่องเรียบร้อย
+  applyThemeSettings(settings);
   closeThemePanel();
 }
 
+// 4. รีเซ็ตธีมเฉพาะใน localStorage เครื่องกลับเป็นค่าเริ่มต้น
 function resetThemeSettings() {
-  db.theme = "default";
-  db.themeSettings = null;
-  save();
-  render();
+  if (confirm("ต้องการรีเซ็ตโทนสีกลับไปเป็นค่าเริ่มต้นของระบบหรือไม่?")) {
+    localStorage.removeItem(THEME_STORE_KEY); // ลบการตั้งค่าสั่งทำพิเศษออกเพื่อให้กลับไปใช้ค่า Default
+    applyThemeSettings();
+    syncThemeControls();
+    closeThemePanel();
+  }
 }
-
 // ==========================================
 // 6. MODULE RENDERERS (UI GENERATORS)
 // ==========================================
