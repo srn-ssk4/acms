@@ -340,7 +340,26 @@ textarea { min-height: 86px; resize: vertical; }
 .cert p { margin: 5px 0; }
 .sign-row { display: flex; justify-content: space-around; width: 100%; margin-top: 30px; gap: 20px; }
 .sign-line { border-top: 1px solid var(--text); padding-top: 8px; min-width: 180px; }
+/* บังคับตารางรายการแข่งขันและตัวหุ้มให้ขยายเต็มความกว้าง 100% */
+#events .table-wrap,
+#eventsTable {
+  width: 100% !important;
+  border-collapse: collapse;
+}
 
+/* ปรับระยะห่างภายในเซลล์ และจัดการการตัดคำให้อ่านง่าย */
+#eventsTable th, 
+#eventsTable td {
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap; /* ป้องกันข้อความแตกแถวในคอลัมน์สั้นๆ */
+}
+
+/* อนุญาตให้ช่องชื่อรายการแข่งขันตัดคำ/ขึ้นบรรทัดใหม่ได้ */
+#eventsTable td:nth-child(1) {
+  white-space: normal;
+  min-width: 180px;
+}
 /* ==========================================================================
    เพิ่มเติมสำหรับระบบ Mobile Menu (เปิด-ปิดเมนูบนสมาร์ตโฟน)
    ========================================================================== */

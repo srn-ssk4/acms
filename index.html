@@ -172,38 +172,49 @@
         <div class="table-wrap"><table id="rankingTable"></table></div>
       </section>
 
-      <section class="section" id="events">
-        <div class="section-title">
-          <div><h3>รายการแข่งขัน</h3><p>กำหนดกลุ่มสาระ ระดับชั้น ประเภทการแข่งขัน จำนวนผู้เข้าแข่งขัน และครูรับผิดชอบ</p></div>
-          <div class="searchbar"><input id="eventSearch" placeholder="ค้นหารายการหรือกลุ่มสาระ"></div>
-        </div>
-        <div class="split">
-          <div class="card admin-only">
-            <h3>เพิ่ม/แก้ไข รายการแข่งขัน</h3>
-            <form id="eventForm">
-              <input type="hidden" id="eventId">
-              <label>ชื่อรายการ<input id="eventName" required></label>
-              <label>กลุ่มสาระ<select id="eventSubject"></select></label>
-              <div class="form-grid two">
-                <label>ระดับชั้น<select id="eventLevel"></select></label>
-                <label>ประเภท<select id="eventType"><option>เดี่ยว</option><option>ทีม</option></select></label>
-              </div>
-              <div class="form-grid two">
-                <label>จำนวนผู้เข้าแข่งขัน<input id="eventMembers" type="number" min="1" value="1"></label>
-                <label>วันที่แข่งขัน<input id="eventDate" type="date"></label>
-              </div>
-              <label>สนามแข่งขัน<select id="eventVenue"></select></label>
-              <div class="actions">
-                <button type="submit">บันทึกรายการ</button>
-                <button class="secondary" type="button" id="clearEvent">ล้างฟอร์ม</button>
-              </div>
-            </form>
-          </div>
-          <div class="card">
-            <div class="table-wrap"><table id="eventsTable"></table></div>
-          </div>
-        </div>
-      </section>
+<section class="section" id="events">
+  <div class="section-title">
+    <div>
+      <h3>รายการแข่งขัน</h3>
+      <p>กำหนดกลุ่มสาระ ระดับชั้น ประเภทการแข่งขัน จำนวนผู้เข้าแข่งขัน และครูรับผิดชอบ</p>
+    </div>
+    <div class="searchbar">
+      <input id="eventSearch" placeholder="ค้นหารายการหรือกลุ่มสาระ">
+    </div>
+  </div>
+
+  <!-- 1. ฟอร์มเพิ่ม/แก้ไขรายการแข่งขัน (แสดงเต็มความกว้างด้านบน) -->
+  <div class="card admin-only" style="margin-bottom: 20px;">
+    <h3>เพิ่ม/แก้ไข รายการแข่งขัน</h3>
+    <form id="eventForm">
+      <input type="hidden" id="eventId">
+      <label>ชื่อรายการ<input id="eventName" required></label>
+      <div class="form-grid two">
+        <label>กลุ่มสาระ<select id="eventSubject"></select></label>
+        <label>ระดับชั้น<select id="eventLevel"></select></label>
+      </div>
+      <div class="form-grid two">
+        <label>ประเภท<select id="eventType"><option>เดี่ยว</option><option>ทีม</option></select></label>
+        <label>จำนวนผู้เข้าแข่งขัน<input id="eventMembers" type="number" min="1" value="1"></label>
+      </div>
+      <div class="form-grid two">
+        <label>วันที่แข่งขัน<input id="eventDate" type="date"></label>
+        <label>สนามแข่งขัน<select id="eventVenue"></select></label>
+      </div>
+      <div class="actions">
+        <button type="submit">บันทึกรายการ</button>
+        <button class="secondary" type="button" id="clearEvent">ล้างฟอร์ม</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 2. ตารางแสดงรายการแข่งขัน (ขยายเต็มความกว้างหน้าจอ) -->
+  <div class="card" style="width: 100%; box-sizing: border-box;">
+    <div class="table-wrap" style="width: 100%; overflow-x: auto;">
+      <table id="eventsTable" style="width: 100%; table-layout: auto;"></table>
+    </div>
+  </div>
+</section>
 
       <section class="section" id="registration">
         <div class="section-title">
