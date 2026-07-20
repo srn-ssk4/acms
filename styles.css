@@ -360,6 +360,38 @@ textarea { min-height: 86px; resize: vertical; }
   white-space: normal;
   min-width: 180px;
 }
+
+/* บังคับตารางของทั้ง 3 เมนูให้ขยายเต็มความกว้าง 100% */
+#resultsTable, #schoolsTable, #venuesTable {
+  width: 100% !important;
+  border-collapse: collapse;
+}
+
+/* ปรับระยะห่างเซลล์ตารางและการแสดงผลข้อความ */
+#resultsTable th, #resultsTable td,
+#schoolsTable th, #schoolsTable td,
+#venuesTable th, #venuesTable td {
+  padding: 10px 14px;
+  text-align: left;
+}
+
+/* จัดสัดส่วนตารางบันทึกผลการแข่งขัน */
+#resultsTable td:nth-child(1) { width: 35%; } /* รายการแข่งขัน */
+#resultsTable td:nth-child(2) { width: 25%; } /* โรงเรียน */
+#resultsTable td:nth-child(3), 
+#resultsTable td:nth-child(4), 
+#resultsTable td:nth-child(5) { text-align: center; } /* คะแนน/ผลรางวัล/อันดับ */
+
+/* จัดสัดส่วนตารางจัดการโรงเรียน */
+#schoolsTable td:nth-child(1) { width: 40%; } /* ชื่อโรงเรียน */
+#schoolsTable td:nth-child(2) { width: 30%; } /* ผู้บริหาร */
+#schoolsTable td:nth-child(3) { width: 15%; } /* โทรศัพท์ */
+
+/* จัดสัดส่วนตารางจัดการสนามแข่งขัน */
+#venuesTable td:nth-child(1) { width: 35%; } /* ชื่อสนาม */
+#venuesTable td:nth-child(2) { width: 35%; } /* ที่ตั้ง/เจ้าภาพ */
+#venuesTable td:nth-child(3) { width: 15%; } /* ผู้ประสานงาน */
+
 /* ==========================================================================
    เพิ่มเติมสำหรับระบบ Mobile Menu (เปิด-ปิดเมนูบนสมาร์ตโฟน)
    ========================================================================== */

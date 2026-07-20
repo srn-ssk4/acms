@@ -252,80 +252,81 @@
     </div>
   </div>
   
-  <div class="split">
-    <div class="card admin-only">
-      <h3>บันทึกคะแนนผลการแข่งขัน</h3>
-      <form id="resultForm">
-        <input type="hidden" id="resultRegId">
-        
-        <label>รายการลงทะเบียน (โรงเรียน - รายการ)
-          <select id="resultRegistration" required></select>
-        </label>
-        
-        <div class="form-grid two">
-          <label>คะแนน (0-100)<input id="resultScore" type="number" min="0" max="100" value="80" required></label>
-          <label>อันดับที่<input id="resultRank" type="number" min="1" placeholder="เช่น 1, 2, 3"></label>
-        </div>
-        
-        <div class="form-grid two">
-          <label>ผลรางวัล / เหรียญ
-            <select id="resultMedal">
-              <option value="">-- คำนวณอัตโนมัติตามคะแนน --</option>
-              <option value="เหรียญทอง">เหรียญทอง (80-100)</option>
-              <option value="เหรียญเงิน">เหรียญเงิน (70-79)</option>
-              <option value="เหรียญทองแดง">เหรียญทองแดง (60-69)</option>
-              <option value="เข้าร่วมการแข่งขัน">เข้าร่วมการแข่งขัน (ต่ำกว่า 60)</option>
-            </select>
-          </label>
-          <label>ผู้บันทึกผล<input id="resultRecorder" value="กรรมการประจำรายการ"></label>
-        </div>
-        
-        <div class="actions">
-          <button type="submit">บันทึกผลคะแนน</button>
-          <button class="secondary" type="button" onclick="$('resultForm').reset(); $('resultRegId').value='';">ล้างฟอร์ม</button>
-        </div>
-      </form>
-    </div>
-    
-    <div class="card">
-      <div class="table-wrap">
-        <table id="resultsTable"></table>
+  <!-- ฟอร์มบันทึกคะแนน (แสดงด้านบนเต็มความกว้าง) -->
+  <div class="card admin-only" style="margin-bottom: 20px;">
+    <h3>บันทึกคะแนนผลการแข่งขัน</h3>
+    <form id="resultForm">
+      <input type="hidden" id="resultRegId">
+      
+      <label>รายการลงทะเบียน (โรงเรียน - รายการ)
+        <select id="resultRegistration" required></select>
+      </label>
+      
+      <div class="form-grid two">
+        <label>คะแนน (0-100)<input id="resultScore" type="number" min="0" max="100" value="80" required></label>
+        <label>อันดับที่<input id="resultRank" type="number" min="1" placeholder="เช่น 1, 2, 3"></label>
       </div>
+      
+      <div class="form-grid two">
+        <label>ผลรางวัล / เหรียญ
+          <select id="resultMedal">
+            <option value="">-- คำนวณอัตโนมัติตามคะแนน --</option>
+            <option value="เหรียญทอง">เหรียญทอง (80-100)</option>
+            <option value="เหรียญเงิน">เหรียญเงิน (70-79)</option>
+            <option value="เหรียญทองแดง">เหรียญทองแดง (60-69)</option>
+            <option value="เข้าร่วมการแข่งขัน">เข้าร่วมการแข่งขัน (ต่ำกว่า 60)</option>
+          </select>
+        </label>
+        <label>ผู้บันทึกผล<input id="resultRecorder" value="กรรมการประจำรายการ"></label>
+      </div>
+      
+      <div class="actions">
+        <button type="submit">บันทึกผลคะแนน</button>
+        <button class="secondary" type="button" onclick="$('resultForm').reset(); $('resultRegId').value='';">ล้างฟอร์ม</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- ตารางแสดงผลการแข่งขัน (ขยายเต็มหน้าจอ) -->
+  <div class="card" style="width: 100%; box-sizing: border-box;">
+    <div class="table-wrap" style="width: 100%; overflow-x: auto;">
+      <table id="resultsTable" style="width: 100%;"></table>
     </div>
   </div>
 </section>
 
-      <section class="section" id="schools">
-        <div class="section-title"><div><h3>จัดการโรงเรียน</h3><p>เพิ่มชื่อโรงเรียน ผู้บริหารสถานศึกษา และเบอร์โทรติดต่อ</p></div></div>
-        <div class="split">
-          <div class="card admin-only">
-            <form id="schoolForm">
-              <input type="hidden" id="schoolId">
-              <label>ชื่อโรงเรียน<input id="schoolName" required></label>
-              <label>ชื่อผู้บริหารสถานศึกษา<input id="schoolDirector" required></label>
-              <label>เบอร์โทรติดต่อ<input id="schoolPhone" required></label>
-              <div class="actions"><button type="submit">บันทึกโรงเรียน</button><button class="secondary" type="button" id="clearSchool">ล้างฟอร์ม</button></div>
-            </form>
-          </div>
-          <div class="card"><div class="table-wrap"><table id="schoolsTable"></table></div></div>
-        </div>
-      </section>
-
-      <section class="section" id="venues">
-        <div class="section-title"><div><h3>จัดการสนามแข่งขัน</h3><p>ทีม Admin เป็นผู้กำหนดสถานที่แข่งขันให้แต่ละรายการ</p></div></div>
-        <div class="split">
-          <div class="card admin-only">
-            <form id="venueForm">
-              <input type="hidden" id="venueId">
-              <label>ชื่อสนาม/อาคาร<input id="venueName" required></label>
-              <label>ที่ตั้ง/โรงเรียนเจ้าภาพ<input id="venueHost" required></label>
-              <label>ผู้ประสานงาน<input id="venueContact" required></label>
-              <button type="submit">บันทึกสนาม</button>
-            </form>
-          </div>
-          <div class="card"><div class="table-wrap"><table id="venuesTable"></table></div></div>
-        </div>
-      </section>
+<section class="section" id="schools">
+  <div class="section-title">
+    <div>
+      <h3>จัดการโรงเรียน</h3>
+      <p>เพิ่มชื่อโรงเรียน ผู้บริหารสถานศึกษา และเบอร์โทรติดต่อ</p>
+    </div>
+  </div>
+  
+  <!-- ฟอร์มเพิ่ม/แก้ไขโรงเรียน (แสดงด้านบน) -->
+  <div class="card admin-only" style="margin-bottom: 20px;">
+    <h3>เพิ่ม/แก้ไข โรงเรียน</h3>
+    <form id="schoolForm">
+      <input type="hidden" id="schoolId">
+      <label>ชื่อโรงเรียน<input id="schoolName" required></label>
+      <div class="form-grid two">
+        <label>ชื่อผู้บริหารสถานศึกษา<input id="schoolDirector" required></label>
+        <label>เบอร์โทรติดต่อ<input id="schoolPhone" required></label>
+      </div>
+      <div class="actions">
+        <button type="submit">บันทึกโรงเรียน</button>
+        <button class="secondary" type="button" id="clearSchool">ล้างฟอร์ม</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- ตารางแสดงรายชื่อโรงเรียน (ขยายเต็มหน้าจอ) -->
+  <div class="card" style="width: 100%; box-sizing: border-box;">
+    <div class="table-wrap" style="width: 100%; overflow-x: auto;">
+      <table id="schoolsTable" style="width: 100%;"></table>
+    </div>
+  </div>
+</section>
 
       <section class="section" id="judges">
         <div class="section-title"><div><h3>กรรมการตัดสิน</h3><p>สมัครเป็นกรรมการในแต่ละรายการแข่งขัน พร้อมข้อมูลวิทยฐานะและเบอร์โทร</p></div></div>
@@ -376,6 +377,38 @@
           </div>
         </div>
       </section>
+
+<section class="section" id="venues">
+  <div class="section-title">
+    <div>
+      <h3>จัดการสนามแข่งขัน</h3>
+      <p>ทีม Admin เป็นผู้กำหนดสถานที่แข่งขันให้แต่ละรายการ</p>
+    </div>
+  </div>
+  
+  <!-- ฟอร์มเพิ่ม/แก้ไขสนามแข่งขัน (แสดงด้านบน) -->
+  <div class="card admin-only" style="margin-bottom: 20px;">
+    <h3>เพิ่ม/แก้ไข สนามแข่งขัน</h3>
+    <form id="venueForm">
+      <input type="hidden" id="venueId">
+      <label>ชื่อสนาม/อาคาร<input id="venueName" required></label>
+      <div class="form-grid two">
+        <label>ที่ตั้ง/โรงเรียนเจ้าภาพ<input id="venueHost" required></label>
+        <label>ผู้ประสานงาน<input id="venueContact" required></label>
+      </div>
+      <div class="actions">
+        <button type="submit">บันทึกสนาม</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- ตารางแสดงสนามแข่งขัน (ขยายเต็มหน้าจอ) -->
+  <div class="card" style="width: 100%; box-sizing: border-box;">
+    <div class="table-wrap" style="width: 100%; overflow-x: auto;">
+      <table id="venuesTable" style="width: 100%;"></table>
+    </div>
+  </div>
+</section>
 
       <section class="section" id="users">
         <div class="section-title"><div><h3>จัดการผู้ใช้งาน</h3><p>Admin และ User กำหนดรหัสผ่านเองได้</p></div></div>
