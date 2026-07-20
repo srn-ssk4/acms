@@ -881,6 +881,8 @@ alert("บันทึกคะแนนและผลการแข่งข�
 if($("judgeForm")) $("judgeForm").addEventListener("submit", e => {
     e.preventDefault();
     const id = $("judgeId").value || nextId("j", db.judges);
+    const actionType = $("judgeId").value ? "update" : "insert"; // ตรวจสอบว่าเป็นเพิ่มหรือแก้ไข
+
     const item = { 
       id, 
       eventId: $("judgeEvent").value, 
@@ -890,12 +892,20 @@ if($("judgeForm")) $("judgeForm").addEventListener("submit", e => {
       phone: $("judgePhone").value 
     };
     
+    // 1. อัปเดตข้อมูลในหน่วยความจำและ LocalStorage ฝั่งเบราว์เซอร์
     upsert(db.judges, item);
+    save();
+
+    // 2. แปลงข้อมูลเป็น Array ตามโครงสร้าง (Schema) เพื่อส่งขึ้น Google Sheet
+    const rowData = [item.id, item.eventId, item.name, item.role, item.rank, item.phone];
+
+    // 3. ⚡ เรียกฟังก์ชันยิงข้อมูลขึ้น Google Sheet ทันที ⚡
+    saveToDatabase("judges", actionType, rowData, render);
+
+    // ล้างค่าฟอร์ม
     e.target.reset();
-    $("judgeId").value = ""; // เคลียร์ ID หลังจากบันทึกเสร็จ
-    save(); 
-    render();
-  });
+    $("judgeId").value = ""; 
+});
   
   if($("certForm")) $("certForm").addEventListener("submit", e => {
     e.preventDefault();
