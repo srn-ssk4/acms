@@ -306,8 +306,13 @@ function fillSelects() {
 
 function rankedSchools() {
   const schoolMedalMap = {};
-  db.schools.forEach(s => { schoolMedalMap[s.id] = { id: s.id, name: s.name, gold: 0, silver: 0, bronze: 0, joined: 0 }; });
+  
+  // 1. ตั้งค่าเริ่มต้นให้กับทุกโรงเรียน
+  db.schools.forEach(s => { 
+    schoolMedalMap[s.id] = { id: s.id, name: s.name, gold: 0, silver: 0, bronze: 0, joined: 0 }; 
+  });
 
+  // 2. รวบรวมสถิติเหรียญรางวัลจากผลการลงทะเบียนแข่งขัน
   db.registrations.forEach(r => {
     if (schoolMedalMap[r.schoolId]) {
       if (r.medal === "เหรียญทอง") schoolMedalMap[r.schoolId].gold++;
@@ -317,9 +322,19 @@ function rankedSchools() {
     }
   });
 
-  return Object.values(schoolMedalMap).sort((a, b) => 
-    b.gold - a.gold || b.silver - a.silver || b.bronze - a.bronze || a.name.localeCompare(b.name, "th")
-  ).map(item => ({
+  // 3. เรียงลำดับจากมากไปน้อย: ทอง -> เงิน -> ทองแดง -> รวมเหรียญทั้งหมด -> ชื่อโรงเรียน
+  return Object.values(schoolMedalMap).sort((a, b) => {
+    const totalA = a.gold + a.silver + a.bronze + a.joined;
+    const totalB = b.gold + b.silver + b.bronze + b.joined;
+
+    return (
+      b.gold - a.gold ||             // 1. เทียบเหรียญทอง
+      b.silver - a.silver ||         // 2. เทียบเหรียญเงิน
+      b.bronze - a.bronze ||         // 3. เทียบเหรียญทองแดง
+      totalB - totalA ||             // 4. เทียบจำนวนเหรียญรวมทั้งหมด
+      a.name.localeCompare(b.name, "th") // 5. เรียงตามชื่อโรงเรียน (ภาษาไทย)
+    );
+  }).map(item => ({
     id: item.id,
     name: item.name,
     medals: { gold: item.gold, silver: item.silver, bronze: item.bronze, joined: item.joined }
