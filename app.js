@@ -596,12 +596,13 @@ if ($("eventForm")) {
   if ($("certLogo")) $("certLogo").addEventListener("change", e => readImage(e.target.files[0], url => { certLogoUrl = url; renderCertificate(); }));
   if ($("certSign")) $("certSign").addEventListener("change", e => readImage(e.target.files[0], url => { certSignUrl = url; renderCertificate(); }));
 
-  if ($("registrationForm")) {
+if ($("registrationForm")) {
     $("registrationForm").addEventListener("submit", e => {
       e.preventDefault();
       const id = $("regId")?.value || nextId("r", db.registrations);
       const oldReg = byId(db.registrations, id);
 
+      // 1. สร้าง Object ข้อมูลรายการลงทะเบียนล่าสุด
       const item = {
         id,
         eventId: $("regEvent").value,
@@ -617,14 +618,22 @@ if ($("eventForm")) {
         rank: oldReg.rank || null
       };
 
+      // 2. อัปเดตข้อมูลเข้า Local State และ LocalStorage
       upsert(db.registrations, item);
       save();
 
+      // 3. ส่งข้อมูลไป Google Sheet โดยไม่ต้อง pass ฟังก์ชัน callback (เพื่อไม่ให้ re-render ทั่วทั้งหน้า)
       const rowData = [item.id, item.eventId, item.schoolId, item.students, item.teacher, item.phone, item.photo, item.cert, item.status, item.score, item.medal, item.rank];
-      saveToDatabase("registrations", "insert", rowData, render);
+      saveToDatabase("registrations", $("regId")?.value ? "update" : "insert", rowData);
 
+      // 4. อัปเดตเฉพาะตาราง "รายการลงทะเบียนล่าสุด" โดยตรงทันที
+      renderRegistrations();
+
+      // 5. เคลียร์เฉพาะค่าในฟอร์ม ไม่ส่งกระทบต่อจุดอื่น
       e.target.reset();
       if ($("regId")) $("regId").value = "";
+
+      alert("ลงทะเบียนนักเรียนเรียบร้อยแล้ว!");
     });
   }
 
