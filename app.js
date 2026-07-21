@@ -487,7 +487,7 @@ function renderRegistrations() {
   ]));
 }
 // =========================================================================
-// RENDER RESULTS (แก้ไขปุ่ม ให้ส่ง data-id ตรงกับ Cell)
+// RENDER RESULTS (เพิ่มปุ่ม แก้ไข และ ลบ ในตารางจัดการ)
 // =========================================================================
 function renderResults() {
   const tableEl = $("resultsTable");
@@ -507,8 +507,8 @@ function renderResults() {
       <td><span class="badge ${r.medal ? 'success' : ''}">${r.medal || "-"}</span></td>
       <td>${r.rank ? `อันดับที่ ${r.rank}` : "-"}</td>
       <td class="admin-only">
-        <!-- เพิ่ม data-action และ data-id เพื่อส่งค่า ID ของ Cell นี้ไปประมวลผล -->
         <button class="secondary btn-sm" data-action="editResult" data-id="${r.id}">✏️ แก้ไข</button>
+        <button class="danger btn-sm" data-action="clearResult" data-id="${r.id}">🗑️ ลบผล</button>
       </td>
     </tr>`;
   });
@@ -516,10 +516,6 @@ function renderResults() {
   html += "</tbody>";
   tableEl.innerHTML = html;
 }
-
-// =========================================================================
-// EDIT RESULT (ดึงข้อมูลจริงมาใส่ในฟอร์มเพื่อแก้ไข)
-// =========================================================================
 // =========================================================================
 // EDIT RESULT (ดึงข้อมูลจาก Cell/Row นั้นๆ หยอดใส่ใน Form)
 // =========================================================================
@@ -615,7 +611,49 @@ function statusBadge(status) {
 function rowActions(action, id, danger=false) {
   return `<button class="${danger ? "danger" : "secondary"}" data-action="${action}" data-id="${id}">${action.startsWith("edit") ? "แก้ไข" : "ลบ"}</button> `;
 }
+// =========================================================================
+// CLEAR RESULT (ลบ/รีเซ็ต ผลการแข่งขัน ณ แถวนั้น)
+// =========================================================================
+function clearResult(regId) {
+  if (currentRole !== "admin") {
+    return alert("เฉพาะผู้ดูแลระบบเท่านั้นที่มีสิทธิ์ลบผลการแข่งขัน");
+  }
 
+  if (!confirm("คุณต้องการลบผลการแข่งขัน (คะแนน เหรียญ และอันดับ) ของรายการนี้ใช่หรือไม่?")) {
+    return;
+  }
+
+  const targetReg = db.registrations.find(x => String(x.id) === String(regId));
+  if (!targetReg) return alert("❌ ไม่พบรายการแข่งขันที่ต้องการลบ");
+
+  // เคลียร์ค่าผลการแข่งขันกลับเป็นค่าว่าง/null
+  targetReg.score = null;
+  targetReg.medal = null;
+  targetReg.rank = null;
+  save(); // บันทึกลง LocalStorage
+
+  // จัดเรียงข้อมูลเพื่อส่งอัปเดตไปยัง Google Sheet
+  const rowData = [
+    targetReg.id,
+    targetReg.eventId,
+    targetReg.schoolId,
+    targetReg.students,
+    targetReg.teacher,
+    targetReg.phone,
+    targetReg.photo || "ยังไม่แนบ",
+    targetReg.cert || "ยังไม่แนบ",
+    targetReg.status || "รอตรวจ",
+    targetReg.score,
+    targetReg.medal,
+    targetReg.rank
+  ];
+
+  // ส่งคำสั่งอัปเดตไปยัง Google Sheet
+  saveToDatabase("registrations", "update", rowData, () => {
+    render(); // รีเฟรชแสดงผลหน้าเว็บใหม่
+    alert("🗑️ ลบผลการแข่งขันเรียบร้อยแล้ว!");
+  });
+}
 // =========================================================================
 // 5. EVENT BINDING & ACTIONS
 // =========================================================================
@@ -626,6 +664,7 @@ function bindForms() {
     const { action, id } = btn.dataset;
     if (action === "editEvent") editEvent(id);
     if (action === "editResult") editResult(id);	
+    if (action === "clearResult") clearResult(id);		
     if (action === "deleteEvent") removeItem("events", id);
     if (action === "editSchool") editSchool(id);
     if (action === "deleteSchool") removeItem("schools", id);
