@@ -422,11 +422,17 @@ function editResult(regId) {
   const r = byId(db.registrations, regId);
   if (!r) return;
 
-  $("resultRegId").value = r.id;
+  // ดึง ID ใส่ Hidden Field และดึงรายการแข่งขันใส่ Select Dropdown
+  if ($("resultRegId")) $("resultRegId").value = r.id;
   if ($("resultRegistration")) $("resultRegistration").value = r.id;
-  $("resultScore").value = r.score ?? "80";
-  $("resultMedal").value = r.medal || "";
-  $("resultRank").value = r.rank || "";
+
+  // สะท้อนค่าเดิมเข้าฟอร์ม
+  if ($("resultScore")) $("resultScore").value = r.score !== null && r.score !== undefined ? r.score : "";
+  if ($("resultMedal")) $("resultMedal").value = r.medal || "";
+  if ($("resultRank")) $("resultRank").value = r.rank !== null && r.rank !== undefined ? r.rank : "";
+
+  // สโครลหน้าจอมาที่ฟอร์มเพื่อความสะดวกในการใช้งาน
+  $("resultForm")?.scrollIntoView({ behavior: "smooth" });
 }
 
 function renderSchools() {
@@ -621,31 +627,57 @@ if ($("eventForm")) {
     });
   }
 
-  if ($("resultForm")) {
+if ($("resultForm")) {
     $("resultForm").addEventListener("submit", e => {
       e.preventDefault();
-      const regId = $("resultRegId").value || $("resultRegistration").value;
+      
+      // 1. ระบุ ID รายการลงทะเบียนที่ต้องการอัปเดตผล
+      const regId = $("resultRegId")?.value || $("resultRegistration")?.value;
+      const targetReg = byId(db.registrations, regId);
+
+      if (!targetReg || !targetReg.id) {
+        return alert("❌ ไม่พบข้อมูลรายการแข่งขันที่ต้องการบันทึก");
+      }
+
+      // 2. ดึงค่าคะแนน เหรียญรางวัล และอันดับ
       const scoreValue = $("resultScore").value;
       const score = scoreValue !== "" ? Number(scoreValue) : null;
       let medal = $("resultMedal").value;
       const rank = $("resultRank").value !== "" ? Number($("resultRank").value) : null;
 
-      if (!medal && score !== null) medal = medalFromScore(score);
+      // ถ้าไม่ได้เลือกเหรียญรางวัล แต่มีคะแนน ให้คำนวณเหรียญให้อัตโนมัติ
+      if (!medal && score !== null) {
+        medal = medalFromScore(score);
+      }
 
-      const targetReg = byId(db.registrations, regId);
-      if (!targetReg || !targetReg.id) return alert("ไม่พบข้อมูลการลงทะเบียนแข่งขันที่ตรงกัน");
-
+      // 3. อัปเดตข้อมูลใน Local State / LocalStorage
       targetReg.score = score;
       targetReg.medal = medal;
       targetReg.rank = rank;
       save();
 
-      const rowData = [targetReg.id, targetReg.eventId, targetReg.schoolId, targetReg.students, targetReg.teacher, targetReg.phone, targetReg.photo, targetReg.cert, targetReg.status, targetReg.score, targetReg.medal, targetReg.rank];
+      // 4. จัดเตรียม rowData ให้ครบทุกคอลัมน์ของแท็บ registrations แล้วส่งไป Google Sheet
+      const rowData = [
+        targetReg.id,
+        targetReg.eventId,
+        targetReg.schoolId,
+        targetReg.students,
+        targetReg.teacher,
+        targetReg.phone,
+        targetReg.photo,
+        targetReg.cert,
+        targetReg.status,
+        targetReg.score,
+        targetReg.medal,
+        targetReg.rank
+      ];
+
       saveToDatabase("registrations", "update", rowData, render);
 
+      // 5. ล้างค่าในฟอร์มและแจ้งเตือนผู้ใช้
       e.target.reset();
-      $("resultRegId").value = ""; 
-      alert("บันทึกคะแนนและผลการแข่งขันสำเร็จ!");
+      if ($("resultRegId")) $("resultRegId").value = "";
+      alert("✅ บันทึกผลคะแนนและส่งข้อมูลไปยัง Google Sheet เรียบร้อยแล้ว!");
     });
   }
 
