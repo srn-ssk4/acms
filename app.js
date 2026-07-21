@@ -512,21 +512,32 @@ function renderResults() {
   tableEl.innerHTML = html;
 }
 
+// =========================================================================
+// EDIT RESULT (ดึงข้อมูลจริงมาใส่ในฟอร์มเพื่อแก้ไข)
+// =========================================================================
 function editResult(regId) {
-  const r = byId(db.registrations, regId);
-  if (!r) return;
+  // ดึงข้อมูลจาก db.registrations โดยค้นหาจาก ID
+  const r = db.registrations.find(x => String(x.id) === String(regId));
+  if (!r) {
+    alert("❌ ไม่พบข้อมูลการลงทะเบียนนี้");
+    return;
+  }
 
-  // ดึง ID ใส่ Hidden Field และดึงรายการแข่งขันใส่ Select Dropdown
+  // กำหนดค่าให้กับ Element ในฟอร์มบันทึกผลคะแนน
   if ($("resultRegId")) $("resultRegId").value = r.id;
   if ($("resultRegistration")) $("resultRegistration").value = r.id;
-
-  // สะท้อนค่าเดิมเข้าฟอร์ม
   if ($("resultScore")) $("resultScore").value = r.score !== null && r.score !== undefined ? r.score : "";
   if ($("resultMedal")) $("resultMedal").value = r.medal || "";
   if ($("resultRank")) $("resultRank").value = r.rank !== null && r.rank !== undefined ? r.rank : "";
 
-  // สโครลหน้าจอมาที่ฟอร์มเพื่อความสะดวกในการใช้งาน
-  $("resultForm")?.scrollIntoView({ behavior: "smooth" });
+  // เลื่อนหน้าจอไปยังฟอร์มบันทึกผลคะแนนเพื่อให้ผู้ใช้แก้ไขได้ทันที
+  const resultFormEl = $("resultForm");
+  if (resultFormEl) {
+    resultFormEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Highlight ฟอร์มชั่วคราวเพื่อให้สังเกตง่าย
+    resultFormEl.classList.add("highlight-form");
+    setTimeout(() => resultFormEl.classList.remove("highlight-form"), 2000);
+  }
 }
 
 function renderSchools() {
@@ -730,59 +741,73 @@ if ($("registrationForm")) {
     });
   }
 
+// =========================================================================
+// RESULT FORM SUBMIT (บันทึกและส่งสะท้อนไปยัง Google Sheet)
+// =========================================================================
 if ($("resultForm")) {
-    $("resultForm").addEventListener("submit", e => {
-      e.preventDefault();
-      
-      // 1. ระบุ ID รายการลงทะเบียนที่ต้องการอัปเดตผล
-      const regId = $("resultRegId")?.value || $("resultRegistration")?.value;
-      const targetReg = byId(db.registrations, regId);
+  $("resultForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    
+    // ดึง ID จาก Hidden Input หรือจาก Dropdown Select
+    const regId = $("resultRegId")?.value || $("resultRegistration")?.value;
+    const targetReg = db.registrations.find(x => String(x.id) === String(regId));
 
-      if (!targetReg || !targetReg.id) {
-        return alert("❌ ไม่พบข้อมูลรายการแข่งขันที่ต้องการบันทึก");
-      }
+    if (!targetReg || !targetReg.id) {
+      alert("❌ ไม่พบรายการแข่งขันที่ต้องการบันทึกคะแนน");
+      return;
+    }
 
-      // 2. ดึงค่าคะแนน เหรียญรางวัล และอันดับ
-      const scoreValue = $("resultScore").value;
-      const score = scoreValue !== "" ? Number(scoreValue) : null;
-      let medal = $("resultMedal").value;
-      const rank = $("resultRank").value !== "" ? Number($("resultRank").value) : null;
+    const scoreValue = $("resultScore").value;
+    const score = scoreValue !== "" ? Number(scoreValue) : null;
+    const medal = $("resultMedal").value || (score !== null ? medalFromScore(score) : null);
+    const rank = $("resultRank").value !== "" ? Number($("resultRank").value) : null;
 
-      // ถ้าไม่ได้เลือกเหรียญรางวัล แต่มีคะแนน ให้คำนวณเหรียญให้อัตโนมัติ
-      if (!medal && score !== null) {
-        medal = medalFromScore(score);
-      }
+    // อัปเดตค่าใน Memory
+    targetReg.score = score;
+    targetReg.medal = medal;
+    targetReg.rank = rank;
+    save(); // บันทึกลง LocalStorage
 
-      // 3. อัปเดตข้อมูลลงใน Local State / LocalStorage
-      targetReg.score = score;
-      targetReg.medal = medal;
-      targetReg.rank = rank;
-      save();
+    // ล็อกปุ่มเพื่อป้องกันการกดซ้ำระหว่างส่งไป Google Sheet
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerText : "";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "⏳ กำลังบันทึกไปยัง Google Sheet...";
+    }
 
-      // 4. จัดเตรียม rowData ส่งไป Google Sheet
-      const rowData = [
-        targetReg.id,
-        targetReg.eventId,
-        targetReg.schoolId,
-        targetReg.students,
-        targetReg.teacher,
-        targetReg.phone,
-        targetReg.photo || "ยังไม่แนบ",
-        targetReg.cert || "ยังไม่แนบ",
-        targetReg.status || "รอตรวจ",
-        targetReg.score,
-        targetReg.medal,
-        targetReg.rank
-      ];
+    // จัดเรียงโครงสร้างข้อมูลแถว (rowData) ให้ตรงกับโครงสร้างคอลัมน์ใน Google Sheet
+    // [0:id, 1:eventId, 2:schoolId, 3:students, 4:teacher, 5:phone, 6:photo, 7:cert, 8:status, 9:score, 10:medal, 11:rank]
+    const rowData = [
+      targetReg.id,
+      targetReg.eventId,
+      targetReg.schoolId,
+      targetReg.students,
+      targetReg.teacher,
+      targetReg.phone,
+      targetReg.photo || "ยังไม่แนบ",
+      targetReg.cert || "ยังไม่แนบ",
+      targetReg.status || "รอตรวจ",
+      targetReg.score,
+      targetReg.medal,
+      targetReg.rank
+    ];
 
-      saveToDatabase("registrations", "update", rowData, render);
-
-      // 5. ล้างค่าในฟอร์มและแจ้งเตือนผู้ใช้
+    // ส่งคำสั่ง 'update' ไปยังแท็บ registrations ใน Google Sheet
+    await saveToDatabase("registrations", "update", rowData, () => {
+      render(); // อัปเดต UI หน้าเว็บ
       e.target.reset();
       if ($("resultRegId")) $("resultRegId").value = "";
-      alert("✅ บันทึกผลคะแนนและส่งข้อมูลไปยัง Google Sheet เรียบร้อยแล้ว!");
+      
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalBtnText;
+      }
+      
+      alert("✅ บันทึกผลคะแนนและอัปเดตลง Google Sheet เรียบร้อยแล้ว!");
     });
-  }
+  });
+}
 
 if ($("schoolForm")) {
     $("schoolForm").addEventListener("submit", e => {
