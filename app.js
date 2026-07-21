@@ -486,7 +486,9 @@ function renderRegistrations() {
       : `<span class="badge">อนุมัติแล้ว (อ่านอย่างเดียว)</span>`
   ]));
 }
-
+// =========================================================================
+// RENDER RESULTS (แก้ไขปุ่ม ให้ส่ง data-id ตรงกับ Cell)
+// =========================================================================
 function renderResults() {
   const tableEl = $("resultsTable");
   if (!tableEl) return;
@@ -499,12 +501,15 @@ function renderResults() {
     if (!ev || !sch) return;
 
     html += `<tr>
-      <td><b>${ev.name}</b><br><small>${ev.level} (${ev.type})</small></td>
-      <td>${sch.name}</td>
+      <td><b>${escapeHtml(ev.name)}</b><br><small>${escapeHtml(ev.level)} (${escapeHtml(ev.type)})</small></td>
+      <td>${escapeHtml(sch.name)}</td>
       <td><span class="badge">${r.score ?? "-"}</span></td>
       <td><span class="badge ${r.medal ? 'success' : ''}">${r.medal || "-"}</span></td>
       <td>${r.rank ? `อันดับที่ ${r.rank}` : "-"}</td>
-      <td class="admin-only"><button class="btn-sm" onclick="editResult('${r.id}')">✏️ แก้ไข</button></td>
+      <td class="admin-only">
+        <!-- เพิ่ม data-action และ data-id เพื่อส่งค่า ID ของ Cell นี้ไปประมวลผล -->
+        <button class="secondary btn-sm" data-action="editResult" data-id="${r.id}">✏️ แก้ไข</button>
+      </td>
     </tr>`;
   });
 
@@ -515,28 +520,28 @@ function renderResults() {
 // =========================================================================
 // EDIT RESULT (ดึงข้อมูลจริงมาใส่ในฟอร์มเพื่อแก้ไข)
 // =========================================================================
+// =========================================================================
+// EDIT RESULT (ดึงข้อมูลจาก Cell/Row นั้นๆ หยอดใส่ใน Form)
+// =========================================================================
 function editResult(regId) {
-  // ดึงข้อมูลจาก db.registrations โดยค้นหาจาก ID
+  // 1. ค้นหาข้อมูลการลงทะเบียนจาก Array ตาม ID ที่กดจากตาราง
   const r = db.registrations.find(x => String(x.id) === String(regId));
   if (!r) {
     alert("❌ ไม่พบข้อมูลการลงทะเบียนนี้");
     return;
   }
 
-  // กำหนดค่าให้กับ Element ในฟอร์มบันทึกผลคะแนน
+  // 2. สะท้อนข้อมูลจาก Cell นั้นไปป้อนลงในช่อง Form
   if ($("resultRegId")) $("resultRegId").value = r.id;
   if ($("resultRegistration")) $("resultRegistration").value = r.id;
-  if ($("resultScore")) $("resultScore").value = r.score !== null && r.score !== undefined ? r.score : "";
+  if ($("resultScore")) $("resultScore").value = (r.score !== null && r.score !== undefined) ? r.score : "";
   if ($("resultMedal")) $("resultMedal").value = r.medal || "";
-  if ($("resultRank")) $("resultRank").value = r.rank !== null && r.rank !== undefined ? r.rank : "";
+  if ($("resultRank")) $("resultRank").value = (r.rank !== null && r.rank !== undefined) ? r.rank : "";
 
-  // เลื่อนหน้าจอไปยังฟอร์มบันทึกผลคะแนนเพื่อให้ผู้ใช้แก้ไขได้ทันที
+  // 3. เลื่อนหน้าจอลงมาที่ฟอร์มเพื่อบันทึก
   const resultFormEl = $("resultForm");
   if (resultFormEl) {
     resultFormEl.scrollIntoView({ behavior: "smooth", block: "center" });
-    // Highlight ฟอร์มชั่วคราวเพื่อให้สังเกตง่าย
-    resultFormEl.classList.add("highlight-form");
-    setTimeout(() => resultFormEl.classList.remove("highlight-form"), 2000);
   }
 }
 
@@ -620,6 +625,7 @@ function bindForms() {
     if (!btn) return;
     const { action, id } = btn.dataset;
     if (action === "editEvent") editEvent(id);
+    if (action === "editResult") editResult(id);	
     if (action === "deleteEvent") removeItem("events", id);
     if (action === "editSchool") editSchool(id);
     if (action === "deleteSchool") removeItem("schools", id);
