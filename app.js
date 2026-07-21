@@ -253,7 +253,7 @@ function initRealtimeSync(renderUIFunction) {
     if (!isUserTyping) {
       fetchDatabase(renderUIFunction);
     }
-  }, 12000); // 12 วินาที
+  }, 60000); // 60 วินาที
 }
 
 // =========================================================================
