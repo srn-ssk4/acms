@@ -512,26 +512,50 @@ function bindForms() {
   
   if ($("eventSearch")) $("eventSearch").addEventListener("input", renderEvents);
 
-  if ($("eventForm")) {
+if ($("eventForm")) {
     $("eventForm").addEventListener("submit", e => {
       e.preventDefault();
+      
+      // 1. ระบุ ID และตรวจสอบว่าเป็น Insert หรือ Update
       const id = $("eventId").value || nextId("e", db.events);
+      const actionType = $("eventId").value ? "update" : "insert";
+
+      // 2. คำนวณจำนวนครูผู้ฝึกสอนและสร้างวัตถุข้อมูลรายการแข่งขัน
+      const membersCount = Number($("eventMembers").value);
       const item = {
         id,
         name: $("eventName").value,
         subject: $("eventSubject").value,
         level: $("eventLevel").value,
         type: $("eventType").value,
-        members: Number($("eventMembers").value),
+        members: membersCount,
         date: $("eventDate").value,
         venueId: $("eventVenue").value,
-        teachers: teacherCount(Number($("eventMembers").value))
+        teachers: teacherCount(membersCount)
       };
+
+      // 3. อัปเดตข้อมูลลงใน Local State / LocalStorage
       upsert(db.events, item);
+      save();
+
+      // 4. ส่งข้อมูลไปยัง Google Sheet ทันทีผ่าน saveToDatabase (แท็บ events)
+      const rowData = [
+        item.id, 
+        item.name, 
+        item.subject, 
+        item.level, 
+        item.type, 
+        item.members, 
+        item.teachers, 
+        item.date, 
+        item.venueId
+      ];
+      saveToDatabase("events", actionType, rowData, render);
+
+      // 5. ล้างค่าในฟอร์มและแจ้งเตือนผู้ใช้
       e.target.reset();
       $("eventId").value = "";
-      save();
-      render();
+      alert("บันทึกข้อมูลรายการแข่งขันเรียบร้อยแล้ว!");
     });
   }
 
