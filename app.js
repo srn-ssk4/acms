@@ -106,14 +106,15 @@ async function fetchDatabase(callback) {
 }
 
 async function saveToDatabase(sheetName, action, rowData, successCallback) {
+  // 1. อัปเดตข้อมูลในหน่วยความจำชั่วคราวบนเครื่องก่อน
   updateLocalCache(sheetName, action, rowData);
   if (typeof successCallback === "function") successCallback(db);
 
   try {
+    // 2. ส่ง Request แบบ POST โดยไม่ใส่ mode: "no-cors"
     await fetch(API_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ sheetName, action, data: rowData })
     });
     console.log(`📤 ส่งคำสั่ง ${action} ไปยังแท็บ ${sheetName} เรียบร้อยแล้ว`);
@@ -650,13 +651,13 @@ if ($("resultForm")) {
         medal = medalFromScore(score);
       }
 
-      // 3. อัปเดตข้อมูลใน Local State / LocalStorage
+      // 3. อัปเดตข้อมูลลงใน Local State / LocalStorage
       targetReg.score = score;
       targetReg.medal = medal;
       targetReg.rank = rank;
       save();
 
-      // 4. จัดเตรียม rowData ให้ครบทุกคอลัมน์ของแท็บ registrations แล้วส่งไป Google Sheet
+      // 4. จัดเตรียม rowData ส่งไป Google Sheet
       const rowData = [
         targetReg.id,
         targetReg.eventId,
@@ -664,9 +665,9 @@ if ($("resultForm")) {
         targetReg.students,
         targetReg.teacher,
         targetReg.phone,
-        targetReg.photo,
-        targetReg.cert,
-        targetReg.status,
+        targetReg.photo || "ยังไม่แนบ",
+        targetReg.cert || "ยังไม่แนบ",
+        targetReg.status || "รอตรวจ",
         targetReg.score,
         targetReg.medal,
         targetReg.rank
