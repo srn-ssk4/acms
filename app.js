@@ -76,6 +76,56 @@ function seed() {
     certNo: 500
   };
 }
+// =========================================================================
+// GENERIC FORM HANDLER (แก้ไขปัญหา Form Reset ก่อนเซฟเสร็จ)
+// =========================================================================
+function handleFormSubmit(formId, config) {
+  const form = $(formId);
+  if (!form) return;
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const idField = config.idPrefix + "Id";
+    const existingId = $(idField)?.value;
+    const id = existingId || nextId(config.idPrefix, db[config.listName]);
+    const actionType = existingId ? "update" : "insert";
+
+    const item = config.buildItem(id, existingId);
+    
+    // อัปเดต Cache ในเครื่องทันทีเพื่อให้ UI ไม่อืด
+    upsert(db[config.listName], item);
+    save();
+
+    // แสดงสถานะกำลังบันทึกที่ปุ่ม Submit (ป้องกันการกดซ้ำ)
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.innerText : "";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerText = "⏳ กำลังบันทึกข้อมูล...";
+    }
+
+    const rowData = config.buildRowData(item);
+
+    // ส่งข้อมูลไปยัง Google Sheets และรอจนกว่าจะสำเร็จ
+    await saveToDatabase(config.listName, actionType, rowData, () => {
+      if (typeof config.onSuccess === "function") {
+        config.onSuccess();
+      } else {
+        render();
+      }
+
+      // ล้างค่าฟอร์มหลังจากบันทึกไปยัง Google Sheets สำเร็จเรียบร้อยแล้วเท่านั้น
+      form.reset();
+      if ($(idField)) $(idField).value = "";
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerText = originalBtnText;
+      }
+
+      if (config.successMsg) alert(config.successMsg);
+    });
+  });
+}
 
 // =========================================================================
 // 2. API & DATABASE SYNC
@@ -184,9 +234,26 @@ function importDatabaseFromJson(event) {
   reader.readAsText(file);
 }
 
+// =========================================================================
+// REALTIME SYNC (หยุด Sync ชั่วคราวหากกำลังพิมพ์ฟอร์มอยู่)
+// =========================================================================
 function initRealtimeSync(renderUIFunction) {
   fetchDatabase(renderUIFunction);
-  setInterval(() => fetchDatabase(renderUIFunction), 12000);
+  
+  setInterval(() => {
+    // เช็คว่าผู้ใช้กำลังพิมพ์อยู่ใน input, select, textarea หรือไม่
+    const activeEl = document.activeElement;
+    const isUserTyping = activeEl && (
+      activeEl.tagName === "INPUT" || 
+      activeEl.tagName === "SELECT" || 
+      activeEl.tagName === "TEXTAREA"
+    );
+
+    // ถ้าผู้ใช้ไม่ได้พิมพ์ฟอร์มค้างไว้ ให้ทำการ Sync ข้อมูลตามปกติ
+    if (!isUserTyping) {
+      fetchDatabase(renderUIFunction);
+    }
+  }, 12000); // 12 วินาที
 }
 
 // =========================================================================
@@ -292,16 +359,42 @@ function render() {
   renderCertificate();
 }
 
+// =========================================================================
+// FILL SELECTS (ป้องกันการ Reset ค่า Option ขณะกรอกฟอร์ม)
+// =========================================================================
 function fillSelects() {
-  const subjectOptions = subjects.map(s => `<option>${s}</option>`).join("");
-  const levelOptions = levels.map(s => `<option>${s}</option>`).join("");
-  if ($("eventSubject")) $("eventSubject").innerHTML = subjectOptions;
-  if ($("eventLevel")) $("eventLevel").innerHTML = levelOptions;
+  const activeEl = document.activeElement; // เช็คว่าผู้ใช้งานกำลังโฟกัสที่ช่องไหนอยู่
+
+  if ($("eventSubject")) $("eventSubject").innerHTML = subjects.map(s => `<option>${s}</option>`).join("");
+  if ($("eventLevel")) $("eventLevel").innerHTML = levels.map(s => `<option>${s}</option>`).join("");
   if ($("eventVenue")) $("eventVenue").innerHTML = optionList(db.venues);
-  ["regEvent","judgeEvent","certEvent"].forEach(id => { if ($(id)) $(id).innerHTML = optionList(db.events, e => `${e.name} (${e.level})`); });
-  if ($("regSchool")) $("regSchool").innerHTML = optionList(db.schools);
-  if ($("resultRegistration")) {
-    $("resultRegistration").innerHTML = db.registrations.map(r => `<option value="${r.id}">${byId(db.events,r.eventId).name || "-"} - ${byId(db.schools,r.schoolId).name || "-"}</option>`).join("");
+
+  // อัปเดต regEvent เฉพาะเมื่อผู้ใช้ไม่ได้กำลังคลิก/เลือกช่องนี้อยู่
+  if ($("regEvent") && activeEl !== $("regEvent")) {
+    const currentRegVal = $("regEvent").value;
+    $("regEvent").innerHTML = optionList(db.events, e => `${e.name} (${e.level})`);
+    if (currentRegVal) $("regEvent").value = currentRegVal; // รักษาค่าเดิมไว้
+  }
+
+  ["judgeEvent", "certEvent"].forEach(id => {
+    if ($(id) && activeEl !== $(id)) {
+      const curVal = $(id).value;
+      $(id).innerHTML = optionList(db.events, e => `${e.name} (${e.level})`);
+      if (curVal) $(id).value = curVal;
+    }
+  });
+
+  // อัปเดต regSchool เฉพาะเมื่อผู้ใช้ไม่ได้กำลังเลือกช่องนี้อยู่
+  if ($("regSchool") && activeEl !== $("regSchool")) {
+    const currentSchoolVal = $("regSchool").value;
+    $("regSchool").innerHTML = optionList(db.schools);
+    if (currentSchoolVal) $("regSchool").value = currentSchoolVal; // รักษาค่าเดิมไว้
+  }
+
+  if ($("resultRegistration") && activeEl !== $("resultRegistration")) {
+    $("resultRegistration").innerHTML = db.registrations.map(r => 
+      `<option value="${r.id}">${byId(db.events, r.eventId).name || "-"} - ${byId(db.schools, r.schoolId).name || "-"}</option>`
+    ).join("");
   }
 }
 
@@ -363,7 +456,7 @@ function renderDashboard() {
 }
 
 function medalRows(rows, compact=false) {
-  return table(compact ? ["โรงเรียน","ทอง","เงิน","ทองแดง"] : ["อันดับโรงเรียน","🎖️ ทอง","🎖️ เงิน","🎖️ ทองแดง","🎖️ เข้าร่วม","รวมทั้งหมด"], rows.map((s,i) => {
+  return table(compact ? ["โรงเรียน","ทอง","เงิน","ทองแดง"] : ["อันดับโรงเรียน","🎖️🎖️🎖️ ทอง","🎖️🎖️ เงิน","🎖️ ทองแดง","🎖️เข้าร่วม","รวมทั้งหมด"], rows.map((s,i) => {
     const total = s.medals.gold+s.medals.silver+s.medals.bronze+s.medals.joined;
     return compact ? [`${i+1}. ${s.name}`, s.medals.gold, s.medals.silver, s.medals.bronze] : [`${i+1}. ${s.name}`, s.medals.gold, s.medals.silver, s.medals.bronze, s.medals.joined, total];
   }));
