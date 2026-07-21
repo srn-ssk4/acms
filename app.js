@@ -619,12 +619,34 @@ function bindForms() {
     });
   }
 
-  if ($("venueForm")) {
+if ($("venueForm")) {
     $("venueForm").addEventListener("submit", e => {
       e.preventDefault();
+      
+      // 1. ระบุ ID และตรวจสอบว่าเป็น Insert หรือ Update
       const id = $("venueId").value || nextId("v", db.venues);
-      upsert(db.venues, { id, name:$("venueName").value, host:$("venueHost").value, contact:$("venueContact").value });
-      e.target.reset(); $("venueId").value = ""; save(); render();
+      const actionType = $("venueId").value ? "update" : "insert";
+
+      // 2. สร้างวัตถุข้อมูลสนามแข่งขัน
+      const item = { 
+        id, 
+        name: $("venueName").value, 
+        host: $("venueHost").value, 
+        contact: $("venueContact").value 
+      };
+
+      // 3. อัปเดตข้อมูลลงใน Local State / LocalStorage
+      upsert(db.venues, item);
+      save();
+
+      // 4. ส่งข้อมูลไปยัง Google Sheet ทันทีผ่าน saveToDatabase
+      const rowData = [item.id, item.name, item.host, item.contact];
+      saveToDatabase("venues", actionType, rowData, render);
+
+      // 5. ล้างค่าในฟอร์มและแจ้งเตือนผู้ใช้
+      e.target.reset(); 
+      $("venueId").value = ""; 
+      alert("บันทึกข้อมูลสนามแข่งขันเรียบร้อยแล้ว!");
     });
   }
 
