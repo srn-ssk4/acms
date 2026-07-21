@@ -634,12 +634,39 @@ if ($("eventForm")) {
     });
   }
 
-  if ($("schoolForm")) {
+if ($("schoolForm")) {
     $("schoolForm").addEventListener("submit", e => {
       e.preventDefault();
+      
+      // 1. ระบุ ID และตรวจสอบว่าเป็น Insert หรือ Update
       const id = $("schoolId").value || nextId("s", db.schools);
-      upsert(db.schools, { id, name:$("schoolName").value, director:$("schoolDirector").value, phone:$("schoolPhone").value, medals: byId(db.schools,id).medals || {gold:0,silver:0,bronze:0,joined:0} });
-      e.target.reset(); $("schoolId").value = ""; save(); render();
+      const actionType = $("schoolId").value ? "update" : "insert";
+
+      // 2. ดึงข้อมูลเหรียญเดิม (ถ้ามี) หรือตั้งค่าเริ่มต้น
+      const existingSchool = byId(db.schools, id);
+      const medals = existingSchool.medals || { gold: 0, silver: 0, bronze: 0, joined: 0 };
+
+      // 3. สร้างวัตถุข้อมูลโรงเรียน
+      const item = {
+        id,
+        name: $("schoolName").value,
+        director: $("schoolDirector").value,
+        phone: $("schoolPhone").value,
+        medals: medals
+      };
+
+      // 4. อัปเดตข้อมูลลงใน Local State / LocalStorage
+      upsert(db.schools, item);
+      save();
+
+      // 5. ส่งข้อมูลไปยัง Google Sheet ทันทีผ่าน saveToDatabase (แท็บ schools)
+      const rowData = [item.id, item.name, item.director, item.phone];
+      saveToDatabase("schools", actionType, rowData, render);
+
+      // 6. ล้างค่าในฟอร์มและแจ้งเตือนผู้ใช้
+      e.target.reset();
+      $("schoolId").value = "";
+      alert("บันทึกข้อมูลโรงเรียนเรียบร้อยแล้ว!");
     });
   }
 
