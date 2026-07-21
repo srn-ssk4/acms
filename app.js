@@ -643,6 +643,7 @@ function bindForms() {
 
       e.target.reset();
       $("judgeId").value = ""; 
+      alert("ส่งข้อมูลการสมัครกรรมการเรียบร้อยแล้ว!");
     });
   }
 
@@ -759,7 +760,6 @@ function openReport() {
   const eventsData = JSON.stringify(db.events);
   const schoolsData = JSON.stringify(db.schools);
 
-  // 1. ตรวจสอบว่ามี Modal สำหรับรายงานหรือยัง ถ้ายังไม่มีให้สร้างขึ้นมาในหน้านั้นเลย
   let reportModal = document.getElementById("reportModal");
   if (!reportModal) {
     reportModal = document.createElement("div");
@@ -773,7 +773,6 @@ function openReport() {
     document.body.appendChild(reportModal);
   }
 
-  // 2. ใส่เนื้อหารายงานลงใน Modal (ไม่ต้องใช้ window.open)
   reportModal.innerHTML = `
     <div style="background: #fff; width: 100%; max-width: 900px; height: 90vh; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;">
       <div class="no-print" style="padding: 12px 16px; background: #f5f7fb; border-bottom: 1px solid #d9e2ec; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
@@ -813,7 +812,6 @@ function openReport() {
 
   reportModal.style.display = "flex";
 
-  // 3. ฟังก์ชันเรนเดอร์ข้อมูลในตาราง
   const regData = JSON.parse(registrationsData);
   const eventData = JSON.parse(eventsData);
   const schoolData = JSON.parse(schoolsData);
@@ -908,7 +906,7 @@ function renderNav() {
   if (!nav) return;
 
   nav.innerHTML = navItems
-    .filter(([id]) => role === "admin" || ["dashboard", "rankings", "events", "registration", "reports"].includes(id))
+    .filter(([id]) => role === "admin" || ["dashboard", "rankings", "events", "registration", "judges", "reports"].includes(id))
     .map(([id, icon, title]) => `<button class="nav-btn ${id===currentPage?"active":""}" data-page="${id}" type="button"><span>${icon}</span><span>${title}</span></button>`)
     .join("");
 }
