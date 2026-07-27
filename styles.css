@@ -564,46 +564,11 @@ textarea { min-height: 86px; resize: vertical; }
     box-sizing: border-box;
   }
 
-/* ขยาย Hero Panel ให้เต็มความกว้างและเต็มพื้นที่ขอบ */
-.hero.hero-full {
-  width: 100%;
-  margin-bottom: 20px;
-}
-
-.hero-panel {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 24px;
-  background: linear-gradient(135deg, var(--hero-from), var(--hero-to));
-  color: #ffffff;
-  border-radius: var(--radius);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden; /* ป้องกันรูปภาพเกินขอบมุมโค้ง */
-  min-height: 180px; /* กำหนดความสูงขั้นต่ำเพื่อให้ดูสมดุล */
-  position: relative;
-}
-
-/* จัดสไตล์ข้อความเดิมให้อยู่ตรงกลางและปรับขนาดตอบสนองหน้าจอ */
-.hero-panel h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  text-align: center;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-/* คุณสมบัติจัดรูปภาพให้อยู่เต็มกรอบและปรับสัดส่วนอัตโนมัติ */
-.hero-banner-img {
-  width: 100%;
-  height: 100%;
-  max-height: 350px; /* สามารถปรับความสูงสูงสุดตามความเหมาะสม */
-  object-fit: cover; /* ครอป/ขยายภาพให้เต็มพื้นที่โดยไม่เสียสัดส่วน */
-  object-position: center; /* จัดจุดโฟกัสรูปไว้ตรงกลาง */
-  border-radius: calc(var(--radius) - 2px);
-  display: block;
-}
+  /* ส่วนของ Hero Panel และ Grid ต่างๆ ให้ปรับตัวตามขนาดหน้าจอ */
+  .hero { 
+    grid-template-columns: 1fr; 
+    gap: 14px;
+  }
   .split, .grid.cols-4, .grid.cols-3, .grid.cols-2 { 
     grid-template-columns: 1fr; 
     gap: 14px;

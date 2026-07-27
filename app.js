@@ -455,29 +455,6 @@ function renderDashboard() {
   );
 }
 
-// ฟังก์ชันสำหรับอัปเดตแบนเนอร์ภาพรวมแดชบอร์ด
-function updateDashboardBanner(imageUrl = "") {
-  const heroPanel = document.getElementById("heroPanel");
-  if (!heroPanel) return;
-
-  if (imageUrl) {
-    // กรณีมี URL รูปภาพ: แสดงรูปภาพแทนข้อความ
-    heroPanel.innerHTML = `
-      <img src="${imageUrl}" alt="ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน" class="hero-banner-img">
-    `;
-    heroPanel.style.padding = "0"; // ยกเลิก Padding เพื่อให้รูปภาพชิดขอบกรอบ
-  } else {
-    // กรณีไม่มีรูปภาพ: แสดงข้อความแบบเดิม
-    heroPanel.innerHTML = `
-      <h3>ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h3>
-    `;
-    heroPanel.style.padding = "24px";
-  }
-}
-
-// ตัวอย่างเรียกใช้: (หากต้องการใส่รูปภาพ ให้ใส่ URL ของรูปในช่องฟังก์ชัน)
-// updateDashboardBanner("https://example.com/banner.jpg");
-
 function medalRows(rows, compact=false) {
   return table(compact ? ["โรงเรียน","ทอง","เงิน","ทองแดง"] : ["อันดับโรงเรียน","🎖️🎖️🎖️ ทอง","🎖️🎖️ เงิน","🎖️ ทองแดง","🎖️เข้าร่วม","รวมทั้งหมด"], rows.map((s,i) => {
     const total = s.medals.gold+s.medals.silver+s.medals.bronze+s.medals.joined;
