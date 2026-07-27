@@ -144,7 +144,7 @@ main { padding: 24px; min-width: 0; }
 }
 .hero-panel {
   padding: 20px;
-  background: linear-gradient(120deg, var(--hero-from), var(--hero-to)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 500'%3E%3Cpath fill='%23ffffff' fill-opacity='.10' d='M0 370c140-78 238-38 360-96 138-66 202-188 540-130v356H0z'/%3E%3Ccircle cx='740' cy='84' r='58' fill='%23fff' fill-opacity='.10'/%3E%3Cpath d='M82 98h190v22H82zM82 140h290v18H82zM82 176h210v18H82z' fill='%23fff' fill-opacity='.12'/%3E%3C/svg%3E");
+  background: linear-gradient(120deg, var(--hero-from), var(--hero-to)), url("data:image/svg+xml,%3Csvg xmlns='https://srn-ssk4.github.io/acms/hero1.jpg' viewBox='0 0 900 500'%3E%3Cpath fill='%23ffffff' fill-opacity='.10' d='M0 370c140-78 238-38 360-96 138-66 202-188 540-130v356H0z'/%3E%3Ccircle cx='740' cy='84' r='58' fill='%23fff' fill-opacity='.10'/%3E%3Cpath d='M82 98h190v22H82zM82 140h290v18H82zM82 176h210v18H82z' fill='%23fff' fill-opacity='.12'/%3E%3C/svg%3E");
   color: #fff;
   border-radius: 8px;
   min-height: 260px;
