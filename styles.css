@@ -142,14 +142,13 @@ main { padding: 24px; min-width: 0; }
   margin-bottom: 18px;
   align-items: stretch;
 }
-/* ขยายรูปภาพให้เต็มพอดีกรอบด้านใน */
+/* บังคับให้รูปภาพยืดเต็มกรอบ 100% */
 .hero-img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* ครอบตัดและขยายให้เต็มพื้นที่กรอบโดยรูปไม่เสียอัตราส่วน */
-  object-position: center; /* จัดจุดโฟกัสให้อยู่ตรงกลาง */
   display: block;
-  border-radius: inherit; /* ให้ขอบโค้งมนตามกรอบแม่ (.hero-panel) */
+  object-fit: contain; /* cover ครอบตัดและขยายภาพให้เต็มกรอบพอดีโดยไม่เบี้ยว */
+  object-position: center; /* จัดให้จุดศูนย์กลางของภาพอยู่ตรงกลาง */
 }
 .hero-panel {
   padding: 20px;
@@ -163,14 +162,6 @@ main { padding: 24px; min-width: 0; }
 }
 .hero-panel h3 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 44px); line-height: 1.15; }
 .hero-panel p { margin: 0; max-width: 780px; color: rgba(255,255,255,.88); line-height: 1.65; }
-/* บังคับให้รูปภาพยืดเต็มกรอบ 100% */
-.hero-img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover; /* ครอบตัดและขยายภาพให้เต็มกรอบพอดีโดยไม่เบี้ยว */
-  object-position: center; /* จัดให้จุดศูนย์กลางของภาพอยู่ตรงกลาง */
-}
 .visual-card {
   background: var(--panel);
   border: 1px solid var(--line);
