@@ -119,12 +119,31 @@
 
       <!-- Dashboard -->
       <section class="section active" id="dashboard">
+	  
         <div class="hero">
+			<!-- คอลัมน์ 1: ภาพป้ายประชาสัมพันธ์ -->		
 			<div class="hero-panel hero-img">
 				<img src="hero1.jpg" alt="ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน" class="hero-img"> 
-		  		<!--<h3>ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h3>-->	
+		  		<!-- <h3>ภาพรวมการแข่งขันศิลปหัตถกรรมนักเรียน กลุ่มโรงเรียนศรีรัตนะ</h3> กรณีให้แสดงเป็นข้อความแทนภาพ-->	
 			</div>
-        </div>
+			
+			<!-- คอลัมน์ 2: แผนที่แสดงตำแหน่งสนามแข่งขัน -->
+			<div class="map-header">
+				<h3 style="margin:0; font-size: 16px; color: var(--text);">📍 ตำแหน่งสนามแข่งขัน</h3>
+					<p style="margin:4px 0 0; font-size: 12px; color: var(--muted);">กลุ่มโรงเรียนศรีรัตนะ</p>
+						<a href="https://maps.google.com/?cid=787868606002246895" 
+							target="1" 
+							rel="noopener noreferrer" class="mini-map-link" 
+							title="คลิกเพื่อเปิดใน Google Maps">
+								<div class="mini-map">
+									<div class="map-overlay-btn">
+										<span>🗺️ เปิด Google Maps</span>
+									</div>
+								</div>
+						</a>
+			</div>
+		</div>
+			
         <div class="grid cols-4" id="stats"></div>
         <div class="grid cols-2">
           <div class="card">
