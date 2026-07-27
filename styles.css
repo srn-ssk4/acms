@@ -142,6 +142,15 @@ main { padding: 24px; min-width: 0; }
   margin-bottom: 18px;
   align-items: stretch;
 }
+/* ขยายรูปภาพให้เต็มพอดีกรอบด้านใน */
+.hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ครอบตัดและขยายให้เต็มพื้นที่กรอบโดยรูปไม่เสียอัตราส่วน */
+  object-position: center; /* จัดจุดโฟกัสให้อยู่ตรงกลาง */
+  display: block;
+  border-radius: inherit; /* ให้ขอบโค้งมนตามกรอบแม่ (.hero-panel) */
+}
 .hero-panel {
   padding: 20px;
   background: linear-gradient(120deg, var(--hero-from), var(--hero-to)), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 500'%3E%3Cpath fill='%23ffffff' fill-opacity='.10' d='M0 370c140-78 238-38 360-96 138-66 202-188 540-130v356H0z'/%3E%3Ccircle cx='740' cy='84' r='58' fill='%23fff' fill-opacity='.10'/%3E%3Cpath d='M82 98h190v22H82zM82 140h290v18H82zM82 176h210v18H82z' fill='%23fff' fill-opacity='.12'/%3E%3C/svg%3E");
@@ -154,6 +163,14 @@ main { padding: 24px; min-width: 0; }
 }
 .hero-panel h3 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 44px); line-height: 1.15; }
 .hero-panel p { margin: 0; max-width: 780px; color: rgba(255,255,255,.88); line-height: 1.65; }
+/* บังคับให้รูปภาพยืดเต็มกรอบ 100% */
+.hero-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover; /* ครอบตัดและขยายภาพให้เต็มกรอบพอดีโดยไม่เบี้ยว */
+  object-position: center; /* จัดให้จุดศูนย์กลางของภาพอยู่ตรงกลาง */
+}
 .visual-card {
   background: var(--panel);
   border: 1px solid var(--line);
